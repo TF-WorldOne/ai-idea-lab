@@ -34,6 +34,20 @@ def get_logo_base64():
             return base64.b64encode(f.read()).decode()
     return None
 
+
+def show_star_celebration():
+    """Display gold star celebration animation"""
+    import random
+    stars_html = '<div class="star-celebration">'
+    for i in range(30):
+        left = random.randint(0, 100)
+        delay = random.uniform(0, 2)
+        duration = random.uniform(2, 4)
+        size = random.randint(16, 32)
+        stars_html += f'<span class="star" style="left: {left}%; animation-delay: {delay}s; animation-duration: {duration}s; font-size: {size}px;">✦</span>'
+    stars_html += '</div>'
+    st.markdown(stars_html, unsafe_allow_html=True)
+
 # --- X-Think Premium Gold & Black Theme CSS ---
 st.markdown("""
 <style>
@@ -450,6 +464,43 @@ header {visibility: hidden;}
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), transparent, rgba(212, 175, 55, 0.1));
     pointer-events: none;
 }
+
+/* ===== Gold Star Celebration Animation ===== */
+@keyframes starfall {
+    0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+@keyframes sparkle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.star-celebration {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.star {
+    position: absolute;
+    top: -50px;
+    color: #D4AF37;
+    font-size: 24px;
+    animation: starfall 3s ease-in forwards, sparkle 0.5s ease-in-out infinite;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.8), 0 0 20px rgba(212, 175, 55, 0.5);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -716,7 +767,7 @@ if start_button:
     st.session_state.facilitator_name = facilitator
     st.session_state.full_report = f"Topic: {topic}\n\n{full_log}\n\n--- Summary ---\n{conclusion}"
 
-    st.balloons()
+    show_star_celebration()
 
 # --- Canvas Display ---
 with col_canvas:
