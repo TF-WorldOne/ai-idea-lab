@@ -26,9 +26,9 @@ st.set_page_config(
 # --- Modern AI Dark Theme CSS ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 
-/* ===== CSS Variables (Modern AI Dark) ===== */
+/* ===== CSS Variables (Modern AI Dark - Deep Sky Blue) ===== */
 :root {
     --bg-main: #0E1117;
     --bg-sidebar: #161B22;
@@ -36,9 +36,10 @@ st.markdown("""
     --bg-input: #0D1117;
     --text-primary: #E6E6E6;
     --text-secondary: #A1A1AA;
-    --accent-blue: #3B82F6;
+    --accent-blue: #00BFFF;
+    --accent-blue-hover: #009ACD;
     --accent-purple: #8B5CF6;
-    --accent-blue-dim: rgba(59, 130, 246, 0.2);
+    --accent-blue-dim: rgba(0, 191, 255, 0.2);
     --accent-purple-dim: rgba(139, 92, 246, 0.2);
     --success: #10B981;
     --error: #EF4444;
@@ -47,9 +48,9 @@ st.markdown("""
 }
 
 /* ===== Base Styles ===== */
-html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="css"] {
     background-color: var(--bg-main) !important;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
     color: var(--text-primary) !important;
 }
 
@@ -62,7 +63,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
 h1 {
     font-weight: 800 !important;
     letter-spacing: -0.03em !important;
-    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+    background: linear-gradient(135deg, #00BFFF 0%, var(--accent-purple) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -181,12 +182,12 @@ section[data-testid="stSidebar"] h2 {
     font-weight: 600 !important;
     font-size: 1rem !important;
     transition: all 0.2s ease !important;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(0, 191, 255, 0.3) !important;
 }
 
 .stButton > button:hover {
-    background: #2563EB !important;
-    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4) !important;
+    background: var(--accent-blue-hover) !important;
+    box-shadow: 0 4px 16px rgba(0, 191, 255, 0.4) !important;
     transform: translateY(-1px) !important;
 }
 
@@ -368,7 +369,7 @@ header {visibility: hidden;}
 /* ===== Round indicator ===== */
 .round-badge {
     display: inline-block;
-    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+    background: linear-gradient(135deg, #00BFFF 0%, var(--accent-purple) 100%);
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
