@@ -9,10 +9,24 @@ from dotenv import load_dotenv
 env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path, override=True)
 
+
+def _get_api_key(key_name: str) -> str:
+    """APIキーを取得（Streamlit Cloud対応）"""
+    # まずStreamlit Secretsを試す
+    try:
+        import streamlit as st
+        if hasattr(st, 'secrets') and key_name in st.secrets:
+            return st.secrets[key_name]
+    except Exception:
+        pass
+    # 次に環境変数を試す
+    return os.getenv(key_name, "")
+
+
 # --- API Keys ---
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+OPENAI_API_KEY = _get_api_key("OPENAI_API_KEY")
+ANTHROPIC_API_KEY = _get_api_key("ANTHROPIC_API_KEY")
+GOOGLE_API_KEY = _get_api_key("GOOGLE_API_KEY")
 
 # --- モデル定義 ---
 # temperatureをサポートしないモデル
