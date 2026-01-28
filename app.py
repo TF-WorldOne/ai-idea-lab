@@ -1,6 +1,6 @@
 """
 X-Think AI Idea Lab - Premium Edition
-Split view with chat on left and synthesis report on right
+Three-column layout with no sidebar
 """
 import streamlit as st
 import time
@@ -22,7 +22,7 @@ st.set_page_config(
     page_title="X-Think AI Idea Lab",
     page_icon="assets/siteicon.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # --- Logo Helper Function ---
@@ -56,7 +56,6 @@ st.markdown("""
 /* ===== CSS Variables (X-Think Premium - Gold & Black) ===== */
 :root {
     --bg-main: #050505;
-    --bg-sidebar: #0A0A0A;
     --bg-card: #1F1F1F;
     --bg-input: #0A0A0A;
     --text-primary: #F0F0F0;
@@ -76,6 +75,11 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
     background-color: var(--bg-main) !important;
     font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
     color: var(--text-primary) !important;
+}
+
+/* Hide sidebar completely */
+section[data-testid="stSidebar"] {
+    display: none !important;
 }
 
 /* Streamlit header - keep functional but minimal */
@@ -119,8 +123,9 @@ p, span, label, div {
 .logo-container {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    margin-bottom: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+    padding: 1rem 0;
 }
 
 .logo-container img {
@@ -128,46 +133,44 @@ p, span, label, div {
     width: auto;
 }
 
-/* ===== Sidebar - Always Visible (No Collapse) ===== */
-section[data-testid="stSidebar"] {
-    background: var(--bg-sidebar) !important;
-    border-right: 1px solid var(--border) !important;
-    min-width: 21rem !important;
-    max-width: 21rem !important;
+/* ===== Column Cards ===== */
+.column-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    min-height: 400px;
+    position: relative;
 }
 
-section[data-testid="stSidebar"] > div {
-    padding: 1.5rem 1rem;
+.column-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
 }
 
-section[data-testid="stSidebar"] h2 {
-    font-size: 0.85rem !important;
+.column-card h3 {
+    color: var(--accent-gold) !important;
+    margin-bottom: 1rem;
+    font-size: 1.1rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.1em !important;
+}
+
+/* ===== Section Headers ===== */
+.section-header {
+    font-size: 0.75rem !important;
     text-transform: uppercase;
     letter-spacing: 0.1em !important;
     color: var(--accent-gold) !important;
-    margin-bottom: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
+    margin-top: 1rem !important;
     border-bottom: 1px solid var(--border);
     padding-bottom: 0.5rem;
-}
-
-/* Hide all collapse/toggle buttons completely */
-[data-testid="collapsedControl"],
-[data-testid="stSidebarCollapse"],
-button[kind="header"],
-button[aria-label*="Close"],
-button[aria-label*="collapse"] {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-
-/* Prevent sidebar from being collapsible */
-section[data-testid="stSidebar"][aria-expanded="false"] {
-    display: block !important;
-    visibility: visible !important;
-    transform: none !important;
-    margin-left: 0 !important;
 }
 
 /* ===== Cards & Containers ===== */
@@ -378,6 +381,24 @@ li[data-baseweb="menu-item"]:hover {
     border-color: var(--accent-gold) !important;
 }
 
+/* ===== Expander ===== */
+.streamlit-expanderHeader {
+    background: var(--bg-input) !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--border-dim) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+}
+
+.streamlit-expanderHeader:hover {
+    border-color: var(--accent-gold) !important;
+}
+
+details[open] > summary {
+    border-bottom: 1px solid var(--border) !important;
+    margin-bottom: 1rem !important;
+}
+
 /* ===== Spinner ===== */
 .stSpinner > div {
     border-top-color: var(--accent-gold) !important;
@@ -557,68 +578,6 @@ header {visibility: hidden;}
 # --- API Status ---
 api_status = check_api_keys()
 
-# --- Sidebar ---
-with st.sidebar:
-    st.markdown("## ✦ API Keys")
-    for provider, is_set in api_status.items():
-        if is_set:
-            st.markdown(f'<div class="api-badge connected">✓ {provider.upper()}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="api-badge disconnected">✗ {provider.upper()}</div>', unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.markdown("## ✦ Collaborators")
-
-    selected_openai = st.multiselect(
-        "OpenAI",
-        list(OPENAI_MODELS.keys()),
-        default=["GPT-4o"] if api_status["openai"] else [],
-        disabled=not api_status["openai"]
-    )
-
-    selected_anthropic = st.multiselect(
-        "Anthropic",
-        list(ANTHROPIC_MODELS.keys()),
-        default=["Claude Sonnet 4"] if api_status["anthropic"] else [],
-        disabled=not api_status["anthropic"]
-    )
-
-    selected_google = st.multiselect(
-        "Google",
-        list(GOOGLE_MODELS.keys()),
-        default=["Gemini 2.5 Flash"] if api_status["google"] else [],
-        disabled=not api_status["google"]
-    )
-
-    selected_models = selected_openai + selected_anthropic + selected_google
-
-    st.markdown("---")
-    st.markdown("## ✦ Facilitator")
-
-    available_facilitators = []
-    for m, (provider, _) in ALL_MODELS.items():
-        if m not in selected_models and api_status.get(provider, False):
-            available_facilitators.append(m)
-
-    if available_facilitators:
-        facilitator = st.selectbox("Summary Host", available_facilitators)
-    else:
-        st.warning("⚠️ Please keep at least one model available")
-        facilitator = None
-
-    st.markdown("---")
-    st.markdown("## ✦ Settings")
-    rounds = st.slider("Number of Rounds", 1, 10, 2)
-    creativity = st.slider("Creativity", 0.0, 1.0, 0.7, 0.1, help="Higher = more adventurous, Lower = more stable")
-
-    expertise_level = st.select_slider(
-        "Expertise Level",
-        options=["Beginner", "General", "Professional", "Expert"],
-        value="General",
-        help="Adjust discussion complexity and terminology"
-    )
-
-
 # --- Initialize Clients ---
 @st.cache_resource
 def init_clients():
@@ -762,10 +721,80 @@ if logo_base64:
 else:
     st.title("✦ X-Think AI Idea Lab")
 
-col_input, col_canvas = st.columns([1, 1], gap="large")
+# Three-column layout
+col_config, col_main, col_synthesis = st.columns([3, 4, 3], gap="medium")
 
-with col_input:
-    st.markdown("### ✦ Enter Your Topic")
+# --- LEFT COLUMN: Configuration ---
+with col_config:
+    st.markdown("### ✦ Configuration")
+    
+    # API Status
+    with st.expander("✦ API Keys", expanded=False):
+        for provider, is_set in api_status.items():
+            if is_set:
+                st.markdown(f'<div class="api-badge connected">✓ {provider.upper()}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="api-badge disconnected">✗ {provider.upper()}</div>', unsafe_allow_html=True)
+
+    # Model Selection
+    with st.expander("✦ AI Collaborators", expanded=True):
+        st.markdown('<p class="section-header">OpenAI</p>', unsafe_allow_html=True)
+        selected_openai = st.multiselect(
+            "OpenAI Models",
+            list(OPENAI_MODELS.keys()),
+            default=["GPT-4o"] if api_status["openai"] else [],
+            disabled=not api_status["openai"],
+            label_visibility="collapsed"
+        )
+
+        st.markdown('<p class="section-header">Anthropic</p>', unsafe_allow_html=True)
+        selected_anthropic = st.multiselect(
+            "Anthropic Models",
+            list(ANTHROPIC_MODELS.keys()),
+            default=["Claude Sonnet 4"] if api_status["anthropic"] else [],
+            disabled=not api_status["anthropic"],
+            label_visibility="collapsed"
+        )
+
+        st.markdown('<p class="section-header">Google</p>', unsafe_allow_html=True)
+        selected_google = st.multiselect(
+            "Google Models",
+            list(GOOGLE_MODELS.keys()),
+            default=["Gemini 2.5 Flash"] if api_status["google"] else [],
+            disabled=not api_status["google"],
+            label_visibility="collapsed"
+        )
+
+    selected_models = selected_openai + selected_anthropic + selected_google
+
+    # Facilitator Selection
+    with st.expander("✦ Facilitator", expanded=True):
+        available_facilitators = []
+        for m, (provider, _) in ALL_MODELS.items():
+            if m not in selected_models and api_status.get(provider, False):
+                available_facilitators.append(m)
+
+        if available_facilitators:
+            facilitator = st.selectbox("Summary Host", available_facilitators, label_visibility="collapsed")
+        else:
+            st.warning("⚠️ Please keep at least one model available")
+            facilitator = None
+
+    # Settings
+    with st.expander("✦ Settings", expanded=True):
+        rounds = st.slider("Number of Rounds", 1, 10, 2)
+        creativity = st.slider("Creativity", 0.0, 1.0, 0.7, 0.1, help="Higher = more adventurous, Lower = more stable")
+        expertise_level = st.select_slider(
+            "Expertise Level",
+            options=["Beginner", "General", "Professional", "Expert"],
+            value="General",
+            help="Adjust discussion complexity and terminology"
+        )
+
+# --- MIDDLE COLUMN: Main Interaction ---
+with col_main:
+    st.markdown("### ✦ Topic & Discussion")
+    
     with st.form(key="session_form"):
         topic = st.text_area(
             "Topic",
@@ -789,13 +818,21 @@ with col_input:
             st.warning("⚠️ Please select a facilitator")
             can_start = False
 
+    # Chat history display area
+    chat_container = st.container()
+
+# --- RIGHT COLUMN: Synthesis Canvas ---
+with col_synthesis:
+    st.markdown("### ✦ Synthesis")
+    synthesis_container = st.container()
+
 # --- Run Session ---
 if start_button and can_start:
     clients = init_clients()
     history_log = []
     st.session_state.generating = True
 
-    with col_input:
+    with chat_container:
         st.markdown("---")
         st.markdown(f"**Topic:** {topic}")
         st.markdown(f"**Participants:** {', '.join(selected_models)}")
@@ -826,8 +863,8 @@ if start_button and can_start:
     # Update Canvas with results
     full_log = "\n\n".join(history_log)
 
-    # Show spinner in both columns during summary generation
-    with col_canvas:
+    # Show spinner in synthesis column during summary generation
+    with synthesis_container:
         canvas_spinner_placeholder = st.empty()
         canvas_spinner_placeholder.markdown("""
         <div class="canvas-card">
@@ -852,8 +889,8 @@ if start_button and can_start:
     show_star_celebration()
     st.rerun()
 
-# --- Canvas Display ---
-with col_canvas:
+# --- Synthesis Display ---
+with synthesis_container:
     if st.session_state.conclusion:
         st.markdown('<h3 class="report-title">✦ Idea Synthesis Report</h3>', unsafe_allow_html=True)
         with st.chat_message("assistant", avatar=get_avatar(st.session_state.facilitator_name)):
