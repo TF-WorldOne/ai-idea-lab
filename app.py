@@ -1,5 +1,5 @@
 """
-XEXON AI Idea Lab - Premium Edition
+X-Think AI Idea Lab - Premium Edition
 Split view with chat on left and synthesis report on right
 """
 import streamlit as st
@@ -19,7 +19,7 @@ from config import (
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="XEXON AI Idea Lab",
+    page_title="X-Think AI Idea Lab",
     page_icon="✦",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -34,12 +34,12 @@ def get_logo_base64():
             return base64.b64encode(f.read()).decode()
     return None
 
-# --- XEXON Premium Gold & Black Theme CSS ---
+# --- X-Think Premium Gold & Black Theme CSS ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 
-/* ===== CSS Variables (XEXON Premium - Gold & Black) ===== */
+/* ===== CSS Variables (X-Think Premium - Gold & Black) ===== */
 :root {
     --bg-main: #050505;
     --bg-sidebar: #0A0A0A;
@@ -644,11 +644,11 @@ logo_base64 = get_logo_base64()
 if logo_base64:
     st.markdown(f'''
     <div class="logo-container">
-        <img src="data:image/png;base64,{logo_base64}" alt="XEXON Logo">
+        <img src="data:image/png;base64,{logo_base64}" alt="X-Think Logo">
     </div>
     ''', unsafe_allow_html=True)
 else:
-    st.title("✦ XEXON AI Idea Lab")
+    st.title("✦ X-Think AI Idea Lab")
 
 col_input, col_canvas = st.columns([1, 1], gap="large")
 
