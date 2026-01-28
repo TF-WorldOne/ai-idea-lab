@@ -148,26 +148,25 @@ section[data-testid="stSidebar"] h2 {
     padding-bottom: 0.5rem;
 }
 
-/* Sidebar collapse/expand button - always visible */
-button[data-testid="stSidebarCollapseButton"],
-button[data-testid="baseButton-headerNoPadding"],
-[data-testid="collapsedControl"],
-[data-testid="stSidebarCollapsedControl"],
-.st-emotion-cache-1dp5vir,
-.st-emotion-cache-164nlkn,
-div[data-testid="collapsedControl"] > button {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 99999 !important;
+/* Custom sidebar toggle button */
+.sidebar-toggle-btn {
     position: fixed !important;
-    left: 10px !important;
-    top: 10px !important;
+    left: 12px !important;
+    top: 12px !important;
+    z-index: 999999 !important;
     background: var(--bg-sidebar) !important;
     border: 1px solid var(--accent-gold) !important;
-    border-radius: 4px !important;
-    padding: 8px !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
     color: var(--accent-gold) !important;
+    cursor: pointer !important;
+    font-size: 18px !important;
+    transition: all 0.2s ease !important;
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--accent-gold) !important;
+    color: var(--bg-main) !important;
 }
 
 /* ===== Cards & Containers ===== */
@@ -551,6 +550,44 @@ header {visibility: hidden;}
     animation: spin 1s linear infinite;
 }
 </style>
+""", unsafe_allow_html=True)
+
+# --- Custom Sidebar Toggle Button (JavaScript) ---
+st.markdown("""
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Create toggle button if it doesn't exist
+    if (!document.querySelector('.sidebar-toggle-btn')) {
+        const btn = document.createElement('button');
+        btn.className = 'sidebar-toggle-btn';
+        btn.innerHTML = '☰';
+        btn.onclick = function() {
+            // Find and click the native Streamlit sidebar button
+            const nativeBtn = document.querySelector('button[data-testid="stSidebarCollapseButton"]') ||
+                              document.querySelector('[data-testid="collapsedControl"] button') ||
+                              document.querySelector('button[kind="headerNoPadding"]');
+            if (nativeBtn) nativeBtn.click();
+        };
+        document.body.appendChild(btn);
+    }
+});
+
+// Re-run on Streamlit rerun
+setTimeout(function() {
+    if (!document.querySelector('.sidebar-toggle-btn')) {
+        const btn = document.createElement('button');
+        btn.className = 'sidebar-toggle-btn';
+        btn.innerHTML = '☰';
+        btn.onclick = function() {
+            const nativeBtn = document.querySelector('button[data-testid="stSidebarCollapseButton"]') ||
+                              document.querySelector('[data-testid="collapsedControl"] button') ||
+                              document.querySelector('button[kind="headerNoPadding"]');
+            if (nativeBtn) nativeBtn.click();
+        };
+        document.body.appendChild(btn);
+    }
+}, 1000);
+</script>
 """, unsafe_allow_html=True)
 
 # --- API Status ---
