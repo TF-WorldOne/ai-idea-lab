@@ -1163,44 +1163,26 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str,
                 "messages": [
                     {"role": "system", "content": "You are a discussion facilitator."},
                     {"role": "user", "content": full_prompt}
-                ],
-                "stream": True
+                ]
             }
             if model_id not in NO_TEMPERATURE_MODELS:
                 params["temperature"] = 0.5
             
             response = clients["openai"].chat.completions.create(**params)
-            
-            # Streaming display
-            full_response = ""
-            for chunk in response:
-                if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
-                    if streaming_placeholder:
-                        streaming_placeholder.markdown(full_response)
-            
-            return full_response
+            return response.choices[0].message.content
 
         elif provider == "anthropic":
             if not clients["anthropic"]:
                 return "❌ Anthropic API key not configured"
             
-            # Streaming display
-            full_response = ""
-            
-            with clients["anthropic"].messages.stream(
+            response = clients["anthropic"].messages.create(
                 model=model_id,
                 max_tokens=4000,
                 temperature=0.5,
                 system="You are a discussion facilitator.",
                 messages=[{"role": "user", "content": full_prompt}]
-            ) as stream:
-                for text in stream.text_stream:
-                    full_response += text
-                    if streaming_placeholder:
-                        streaming_placeholder.markdown(full_response)
-            
-            return full_response
+            )
+            return response.content[0].text
 
 
         elif provider == "google":
