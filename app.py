@@ -1135,7 +1135,9 @@ Focus your discussion on the file content while addressing the user's question.
 
 
 # --- Facilitator Function ---
-def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, collaborators: list, expertise: str = "General") -> str:
+def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
+               collaborators: list, expertise: str = "General", 
+               streaming_placeholder=None) -> str:
     provider, model_id = ALL_MODELS[facilitator_name]
 
     collab_list = "\n".join([f"- **{c}**" for c in collaborators])
@@ -1170,12 +1172,12 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
             response = clients["openai"].chat.completions.create(**params)
             
             # Streaming display
-            placeholder = st.empty()
             full_response = ""
             for chunk in response:
                 if chunk.choices[0].delta.content:
                     full_response += chunk.choices[0].delta.content
-                    placeholder.markdown(full_response)
+                    if streaming_placeholder:
+                        streaming_placeholder.markdown(full_response)
             
             return full_response
 
@@ -1184,7 +1186,6 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
                 return "❌ Anthropic API key not configured"
             
             # Streaming display
-            placeholder = st.empty()
             full_response = ""
             
             with clients["anthropic"].messages.stream(
@@ -1196,7 +1197,8 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
             ) as stream:
                 for text in stream.text_stream:
                     full_response += text
-                    placeholder.markdown(full_response)
+                    if streaming_placeholder:
+                        streaming_placeholder.markdown(full_response)
             
             return full_response
 
@@ -1688,13 +1690,17 @@ if start_button and can_start:
             <p style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">Log length: {len(full_log)} chars</p>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Create streaming placeholder inside synthesis_container context
+        streaming_placeholder = st.empty()
 
     # Generate summary (this happens while chat logs remain visible)
     conclusion = None
     try:
         import time
         start_time = time.time()
-        conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, expertise=expertise_level)
+        conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, 
+                               expertise=expertise_level, streaming_placeholder=streaming_placeholder)
         elapsed = time.time() - start_time
         
         # Check if conclusion is actually an error message
