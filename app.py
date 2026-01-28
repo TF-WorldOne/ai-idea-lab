@@ -356,9 +356,10 @@ col_input, col_canvas = st.columns([1, 1.5], gap="large")
 
 with col_input:
     st.markdown("### 💭 テーマを入力")
-    topic = st.text_input(
+    topic = st.text_area(
         "テーマ",
         "地方の過疎化問題を解決する革新的なアプローチ",
+        height=100,
         label_visibility="collapsed"
     )
 
