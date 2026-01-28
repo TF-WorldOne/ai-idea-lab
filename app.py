@@ -151,11 +151,23 @@ section[data-testid="stSidebar"] h2 {
 /* Sidebar collapse/expand button - always visible */
 button[data-testid="stSidebarCollapseButton"],
 button[data-testid="baseButton-headerNoPadding"],
-[data-testid="collapsedControl"] {
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"],
+.st-emotion-cache-1dp5vir,
+.st-emotion-cache-164nlkn,
+div[data-testid="collapsedControl"] > button {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
-    z-index: 9999 !important;
+    z-index: 99999 !important;
+    position: fixed !important;
+    left: 10px !important;
+    top: 10px !important;
+    background: var(--bg-sidebar) !important;
+    border: 1px solid var(--accent-gold) !important;
+    border-radius: 4px !important;
+    padding: 8px !important;
+    color: var(--accent-gold) !important;
 }
 
 /* ===== Cards & Containers ===== */
