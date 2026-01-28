@@ -22,6 +22,160 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- Glassmorphism CSS ---
+st.markdown("""
+<style>
+/* グラデーション背景 */
+.stApp {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background-attachment: fixed;
+}
+
+/* メインコンテンツのガラス効果 */
+.main .block-container {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    margin-top: 1rem;
+}
+
+/* サイドバーのガラス効果 */
+section[data-testid="stSidebar"] {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+section[data-testid="stSidebar"] > div {
+    background: transparent;
+}
+
+/* タイトルスタイル */
+h1 {
+    background: linear-gradient(90deg, #00d4ff, #7c3aed, #f472b6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+}
+
+/* カード風のチャットメッセージ */
+.stChatMessage {
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* 入力フィールド */
+.stTextInput input {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    color: white !important;
+    padding: 0.75rem 1rem !important;
+}
+
+.stTextInput input::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ボタン */
+.stButton > button {
+    background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 2rem !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4) !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6) !important;
+}
+
+/* マルチセレクト */
+.stMultiSelect {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+div[data-baseweb="select"] {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 10px !important;
+}
+
+/* アラート/通知 */
+.stSuccess, .stError, .stWarning, .stInfo {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* スライダー */
+.stSlider {
+    padding: 1rem 0;
+}
+
+/* ヘッダー */
+h2, h3 {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 通常テキスト */
+p, span, label {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* リンク */
+a {
+    color: #00d4ff !important;
+}
+
+/* 区切り線 */
+hr {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ダウンロードボタン */
+.stDownloadButton > button {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(5px);
+}
+
+.stDownloadButton > button:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* スピナー背景 */
+.stSpinner > div {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+/* コードブロック */
+.stCodeBlock {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-radius: 12px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("💡 AI Idea Lab Pro")
 st.markdown("複数のAIがアイデアを **発展・エンハンス** し、最高のアイデアを生み出します")
 
