@@ -78,9 +78,19 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
     color: var(--text-primary) !important;
 }
 
+/* Hide Streamlit header and reduce top space */
+header[data-testid="stHeader"] {
+    display: none !important;
+}
+
 .main .block-container {
-    padding: 0.5rem 2rem 6rem 2rem;
+    padding: 1rem 2rem 6rem 2rem;
+    padding-top: 1rem !important;
     max-width: 100% !important;
+}
+
+[data-testid="stAppViewContainer"] > .main {
+    padding-top: 0 !important;
 }
 
 /* ===== Typography & Headers ===== */
