@@ -82,13 +82,13 @@ section[data-testid="stSidebar"] {
     display: none !important;
 }
 
-/* Streamlit header - keep functional but minimal */
+/* Hide Streamlit header completely */
 header[data-testid="stHeader"] {
-    background: var(--bg-main) !important;
+    display: none !important;
 }
 
 .main .block-container {
-    padding: 0.5rem 2rem 4rem 2rem !important;
+    padding: 0rem 2rem 2rem 2rem !important;
     max-width: 100% !important;
 }
 
@@ -124,12 +124,12 @@ p, span, label, div {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1rem;
-    padding: 0.5rem 0;
+    margin-bottom: 0.75rem;
+    padding: 0.75rem 0 0 0;
 }
 
 .logo-container img {
-    height: 50px;
+    height: 45px;
     width: auto;
 }
 
