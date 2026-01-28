@@ -915,22 +915,27 @@ if start_button and can_start:
     # Update Canvas with results
     full_log = "\n\n".join(history_log)
 
-    # Show spinner in synthesis column during summary generation
+    # Show progress in synthesis column during summary generation
     with synthesis_container:
-        canvas_spinner_placeholder = st.empty()
-        canvas_spinner_placeholder.markdown("""
+        synthesis_progress = st.empty()
+        synthesis_progress.markdown(f"""
         <div class="canvas-card">
             <h2 class="report-title">✦ Idea Synthesis Report</h2>
             <div class="generating-spinner"></div>
-            <p>Synthesizing discussion...</p>
+            <p style="text-align: center; margin-top: 1rem;">🤖 {facilitator} is analyzing the discussion...</p>
+            <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">This may take 30-60 seconds for long discussions</p>
         </div>
         """, unsafe_allow_html=True)
 
-    with st.spinner(f"✦ {facilitator} is creating the summary..."):
+    # Generate summary (this happens while chat logs remain visible)
+    try:
         conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, expertise=expertise_level)
+    except Exception as e:
+        conclusion = f"❌ Error generating summary: {str(e)}\n\nPlease try again or use a different facilitator model."
+        st.error("Failed to generate summary. Partial discussion results are still available above.")
 
-    # Clear the spinner placeholder
-    canvas_spinner_placeholder.empty()
+    # Clear the progress indicator
+    synthesis_progress.empty()
 
     # Save to session state
     st.session_state.conclusion = conclusion
