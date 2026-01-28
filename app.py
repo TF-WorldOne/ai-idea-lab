@@ -1665,7 +1665,6 @@ if start_button and can_start:
                     time.sleep(0.5)
 
             progress_bar.progress(1.0)
-            status_text.text("✅ Discussion complete!")
             st.success("✦ Discussion complete! Generating summary...")
             
         except Exception as e:
