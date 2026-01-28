@@ -1136,8 +1136,7 @@ Focus your discussion on the file content while addressing the user's question.
 
 # --- Facilitator Function ---
 def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
-               collaborators: list, expertise: str = "General", 
-               streaming_placeholder=None) -> str:
+               collaborators: list, expertise: str = "General") -> str:
     provider, model_id = ALL_MODELS[facilitator_name]
 
     collab_list = "\n".join([f"- **{c}**" for c in collaborators])
@@ -1647,9 +1646,6 @@ if start_button and can_start:
                             history_log.append(f"[{model}]: {error_msg}")
 
                     time.sleep(0.5)
-                    
-            # Debug: Log completion of all rounds
-            st.write(f"🔍 DEBUG: All {rounds} rounds completed. Total messages: {len(history_log)}")
 
             progress_bar.progress(1.0)
             status_text.text("✅ Discussion complete!")
@@ -1658,9 +1654,6 @@ if start_button and can_start:
         except Exception as e:
             st.error(f"❌ Session error: {str(e)}")
             st.warning("⚠️ Partial results may be available. Attempting to generate summary...")
-            # Debug: Show stack trace
-            import traceback
-            st.code(traceback.format_exc())
 
 
     # Update Canvas with results
