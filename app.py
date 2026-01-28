@@ -36,10 +36,10 @@ st.markdown("""
     --bg-input: #0D1117;
     --text-primary: #E6E6E6;
     --text-secondary: #A1A1AA;
-    --accent-blue: #00BFFF;
-    --accent-blue-hover: #009ACD;
+    --accent-blue: #1E90FF;
+    --accent-blue-hover: #1873CC;
     --accent-purple: #8B5CF6;
-    --accent-blue-dim: rgba(0, 191, 255, 0.2);
+    --accent-blue-dim: rgba(30, 144, 255, 0.2);
     --accent-purple-dim: rgba(139, 92, 246, 0.2);
     --success: #10B981;
     --error: #EF4444;
@@ -63,7 +63,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
 h1 {
     font-weight: 800 !important;
     letter-spacing: -0.03em !important;
-    background: linear-gradient(135deg, #00BFFF 0%, var(--accent-purple) 100%);
+    background: linear-gradient(135deg, #1E90FF 0%, var(--accent-purple) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -182,12 +182,12 @@ section[data-testid="stSidebar"] h2 {
     font-weight: 600 !important;
     font-size: 1rem !important;
     transition: all 0.2s ease !important;
-    box-shadow: 0 2px 8px rgba(0, 191, 255, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(30, 144, 255, 0.3) !important;
 }
 
 .stButton > button:hover {
     background: var(--accent-blue-hover) !important;
-    box-shadow: 0 4px 16px rgba(0, 191, 255, 0.4) !important;
+    box-shadow: 0 4px 16px rgba(30, 144, 255, 0.4) !important;
     transform: translateY(-1px) !important;
 }
 
@@ -369,7 +369,7 @@ header {visibility: hidden;}
 /* ===== Round indicator ===== */
 .round-badge {
     display: inline-block;
-    background: linear-gradient(135deg, #00BFFF 0%, var(--accent-purple) 100%);
+    background: linear-gradient(135deg, #1E90FF 0%, var(--accent-purple) 100%);
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
