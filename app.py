@@ -559,6 +559,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("## ✦ Settings")
     rounds = st.slider("Number of Rounds", 1, 10, 2)
+    creativity = st.slider("Creativity", 0.0, 1.0, 0.7, 0.1, help="Higher = more creative, Lower = more focused")
 
 
 # --- Initialize Clients ---
@@ -585,7 +586,7 @@ def init_clients():
 
 
 # --- AI Call Function ---
-def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, topic: str = "") -> str:
+def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, topic: str = "", temperature: float = 0.7) -> str:
     provider, model_id = ALL_MODELS[model_name]
 
     if is_first:
@@ -605,7 +606,7 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
                 ]
             }
             if model_id not in NO_TEMPERATURE_MODELS:
-                params["temperature"] = 0.9
+                params["temperature"] = temperature
             response = clients["openai"].chat.completions.create(**params)
             return response.choices[0].message.content
 
@@ -615,7 +616,7 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
             response = clients["anthropic"].messages.create(
                 model=model_id,
                 max_tokens=1500,
-                temperature=0.9,
+                temperature=temperature,
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -624,7 +625,7 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
         elif provider == "google":
             if not clients["google"]:
                 return "❌ Google API key not configured"
-            model = genai.GenerativeModel(model_id)
+            model = genai.GenerativeModel(model_id, generation_config={"temperature": temperature})
             full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
             response = model.generate_content(full_prompt)
             return response.text
@@ -744,10 +745,10 @@ if start_button:
                     st.markdown(f'<span class="model-badge">{model}</span>', unsafe_allow_html=True)
 
                     if i == 0 and j == 0:
-                        msg = ask_ai(model, clients, "", is_first=True, topic=topic)
+                        msg = ask_ai(model, clients, "", is_first=True, topic=topic, temperature=creativity)
                     else:
                         context_text = "\n\n".join(history_log[-6:])
-                        msg = ask_ai(model, clients, context_text)
+                        msg = ask_ai(model, clients, context_text, temperature=creativity)
 
                     st.write(msg)
 

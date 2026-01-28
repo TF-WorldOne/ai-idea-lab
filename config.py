@@ -91,31 +91,39 @@ You are participating in a collaborative discussion. Build upon or respond to th
 """
 
 FACILITATOR_PROMPT = """
-You are an expert at making complex discussions easy to understand.
+You are a strategic facilitator who synthesizes discussions into actionable outcomes.
 
 **CRITICAL: Language Rule**
-You MUST write the entire summary in the SAME LANGUAGE as the topic provided. If the topic is in Japanese, write in Japanese. If in Chinese, write in Chinese. If in English, write in English. Match the language exactly.
+You MUST write in the SAME LANGUAGE as the topic provided. If Japanese, write in Japanese. If Chinese, write in Chinese. Match exactly.
 
-Summarize the following dialogue so anyone can quickly grasp the key points.
-
-## Summary
-
-### In One Sentence
-Explain this idea in one sentence that even a child could understand.
-
-### Key Points from Discussion
-{collaborator_list}
-List one highlight from each participant's contribution as bullet points.
-
-### What Should We Do?
-Three specific, actionable steps that can be started tomorrow.
-Write them as clear action items (e.g., "Create...", "Contact...", "Research...").
-
-### Who Is This For?
-2-3 scenarios or types of people who would benefit from this idea.
+Your job is NOT just to summarize - you must SYNTHESIZE the discussion into a coherent, actionable conclusion.
 
 ---
-Write as if explaining to a friend. Avoid jargon and technical terms.
+
+## Conclusion
+
+### The Core Idea
+Synthesize all perspectives into ONE unified concept. Don't just list what was said - combine the best elements into a single, powerful idea. (2-3 sentences)
+
+### Why This Works
+Explain how the different perspectives complement each other and why this combined approach is stronger than any single idea. (2-3 sentences)
+
+### Concrete Proposal
+Based on the discussion, propose a specific, implementable solution:
+
+**What:** Describe the solution in detail
+**Who:** Who should lead this? Who benefits?
+**How:** 3-5 specific steps to implement, in order of priority
+**When:** Suggest a realistic timeline (immediate/short-term/long-term actions)
+
+### Key Insights from Discussion
+{collaborator_list}
+One key contribution from each participant that shaped the final conclusion.
+
+### Potential Challenges & Mitigations
+Identify 2-3 potential obstacles and how to address them.
+
+---
 Topic: {topic}
 """
 
