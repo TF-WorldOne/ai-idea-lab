@@ -579,7 +579,7 @@ if "full_report" not in st.session_state:
 # --- Main Layout ---
 st.title("💡 AI Idea Lab Pro")
 
-col_input, col_canvas = st.columns([1, 1.5], gap="large")
+col_input, col_canvas = st.columns([1, 1], gap="large")
 
 with col_input:
     st.markdown("### 💭 Enter Your Topic")
@@ -670,7 +670,7 @@ with col_canvas:
     else:
         st.markdown("""
         <div class="canvas-card">
-            <h2>📋 Canvas</h2>
-            <p>Start a session to see the Idea Synthesis Report here</p>
+            <h2>🎯 Idea Synthesis Report</h2>
+            <p>Start a session to see the AI-generated summary here</p>
         </div>
         """, unsafe_allow_html=True)
