@@ -88,7 +88,7 @@ header[data-testid="stHeader"] {
 }
 
 .main .block-container {
-    padding: 1rem 2rem 6rem 2rem !important;
+    padding: 0.5rem 2rem 4rem 2rem !important;
     max-width: 100% !important;
 }
 
@@ -124,12 +124,12 @@ p, span, label, div {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 2rem;
-    padding: 1rem 0;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
 }
 
 .logo-container img {
-    height: 60px;
+    height: 50px;
     width: auto;
 }
 
@@ -717,6 +717,12 @@ if "full_report" not in st.session_state:
     st.session_state.full_report = None
 if "generating" not in st.session_state:
     st.session_state.generating = False
+if "discussion_history" not in st.session_state:
+    st.session_state.discussion_history = []
+if "current_topic" not in st.session_state:
+    st.session_state.current_topic = None
+if "current_participants" not in st.session_state:
+    st.session_state.current_participants = []
 
 
 # --- Main Layout ---
@@ -836,8 +842,27 @@ with col_synthesis:
     st.markdown("### ✦ Synthesis")
     synthesis_container = st.container()
 
+# --- Display Previous Discussion (if exists) ---
+with chat_container:
+    if st.session_state.discussion_history:
+        st.markdown("---")
+        st.markdown(f"**Topic:** {st.session_state.current_topic}")
+        st.markdown(f"**Participants:** {', '.join(st.session_state.current_participants)}")
+        st.markdown(f"**Facilitator:** {st.session_state.facilitator_name}")
+        st.markdown("---")
+        
+        for msg in st.session_state.discussion_history:
+            with st.chat_message("assistant", avatar=msg["avatar"]):
+                st.markdown(f'<span class="model-badge">{msg["model"]}</span>', unsafe_allow_html=True)
+                st.write(msg["content"])
+
 # --- Run Session ---
 if start_button and can_start:
+    # Clear previous session
+    st.session_state.discussion_history = []
+    st.session_state.current_topic = topic
+    st.session_state.current_participants = selected_models
+    
     clients = init_clients()
     history_log = []
     st.session_state.generating = True
@@ -908,6 +933,12 @@ if start_button and can_start:
                         if msg:
                             st.write(msg)
                             history_log.append(f"[{model}]: {msg}")
+                            # Store in session state for persistence
+                            st.session_state.discussion_history.append({
+                                "model": model,
+                                "content": msg,
+                                "avatar": get_avatar(model)
+                            })
                         else:
                             error_msg = f"❌ {model} failed to respond"
                             st.error(error_msg)
@@ -936,18 +967,48 @@ if start_button and can_start:
             <div class="generating-spinner"></div>
             <p style="text-align: center; margin-top: 1rem;">🤖 {facilitator} is analyzing the discussion...</p>
             <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">This may take 30-60 seconds for long discussions</p>
+            <p style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">Log length: {len(full_log)} chars</p>
         </div>
         """, unsafe_allow_html=True)
 
     # Generate summary (this happens while chat logs remain visible)
+    conclusion = None
     try:
+        import time
+        start_time = time.time()
         conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, expertise=expertise_level)
+        elapsed = time.time() - start_time
+        
+        # Check if conclusion is actually an error message
+        if conclusion and conclusion.startswith("❌"):
+            raise Exception(f"Facilitator returned error: {conclusion}")
+            
     except Exception as e:
-        conclusion = f"❌ Error generating summary: {str(e)}\n\nPlease try again or use a different facilitator model."
-        st.error("Failed to generate summary. Partial discussion results are still available above.")
+        elapsed = time.time() - start_time if 'start_time' in locals() else 0
+        error_msg = str(e)
+        
+        # Provide detailed error information
+        conclusion = f"""❌ **Synthesis Error** (after {elapsed:.1f}s)
+
+**Error:** {error_msg}
+
+**Troubleshooting:**
+- Try using a different facilitator model
+- Reduce the number of rounds
+- Check API key status
+
+**Discussion Summary Available:**
+The discussion log is preserved above. You can manually review the {len(history_log)} messages exchanged.
+"""
+        
+        with synthesis_container:
+            synthesis_progress.empty()
+            st.error(f"Failed to generate synthesis after {elapsed:.1f}s: {error_msg}")
+            st.info("💡 Tip: Try GPT-4o or Claude Sonnet 4 as facilitator for better reliability")
 
     # Clear the progress indicator
-    synthesis_progress.empty()
+    if conclusion and not conclusion.startswith("❌"):
+        synthesis_progress.empty()
 
     # Save to session state
     st.session_state.conclusion = conclusion
@@ -956,7 +1017,7 @@ if start_button and can_start:
     st.session_state.generating = False
 
     show_star_celebration()
-    st.rerun()
+    # Don't rerun - let the synthesis display below handle it
 
 # --- Synthesis Display ---
 with synthesis_container:
