@@ -77,19 +77,70 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
     color: var(--text-primary) !important;
 }
 
+/* ===== AGGRESSIVE: Hide ALL Streamlit UI elements ===== */
 /* Hide sidebar completely */
 section[data-testid="stSidebar"] {
     display: none !important;
 }
 
 /* Hide Streamlit header completely */
-header[data-testid="stHeader"] {
+header[data-testid="stHeader"],
+.stHeader,
+[data-testid="stHeader"] {
+    display: none !important;
+    height: 0 !important;
+    visibility: hidden !important;
+}
+
+/* Hide top decoration bar */
+[data-testid="stDecoration"],
+.stDecoration {
+    display: none !important;
+    height: 0 !important;
+}
+
+/* Hide toolbar */
+[data-testid="stToolbar"] {
     display: none !important;
 }
 
-.main .block-container {
-    padding: 0rem 2rem 2rem 2rem !important;
+/* Remove ALL padding from main containers */
+.main .block-container,
+[data-testid="stAppViewBlockContainer"],
+.stMainBlockContainer,
+[data-testid="stMainBlockContainer"] {
+    padding-top: 0 !important;
+    padding-bottom: 1rem !important;
+    margin-top: 0 !important;
     max-width: 100% !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+/* Ensure the app view starts at the very top */
+.stApp,
+[data-testid="stApp"] {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.stAppViewMain,
+[data-testid="stAppViewMain"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Force the main container to have no top spacing */
+.stMain,
+[data-testid="stMain"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Remove any iframe padding */
+iframe {
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* ===== Typography & Headers ===== */
