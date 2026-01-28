@@ -1,6 +1,6 @@
 """
-AI Idea Lab Pro - 創造的コラボレーションアプリ
-複数のAIがアイデアを発展・エンハンスし、最高のアイデアを生み出します
+AI Idea Lab Pro - Gemini Canvas Edition
+Split view with chat on left and canvas on right
 """
 import streamlit as st
 import time
@@ -15,300 +15,248 @@ from config import (
     get_avatar, check_api_keys
 )
 
-# --- ページ設定 ---
+# --- Page Configuration ---
 st.set_page_config(
     page_title="AI Idea Lab Pro",
     page_icon="💡",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# --- Glassmorphism CSS ---
+# --- Gemini Canvas CSS (Light Mode with Glass effects) ---
 st.markdown("""
 <style>
-/* グラデーション背景 */
-.stApp {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    background-attachment: fixed;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg-primary: #F0F4F9;
+    --bg-card: #FFFFFF;
+    --text-primary: #1F1F1F;
+    --text-secondary: #5F6368;
+    --accent: #1A73E8;
+    --accent-light: #E8F0FE;
+    --success: #34A853;
+    --error: #EA4335;
+    --border: rgba(0,0,0,0.08);
 }
 
-/* メインコンテンツのガラス効果 */
+html, body, [data-testid="stAppViewContainer"] {
+    background-color: var(--bg-primary) !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
 .main .block-container {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 2rem;
-    margin-top: 1rem;
+    padding: 1rem 2rem 6rem 2rem;
+    max-width: 100% !important;
 }
 
-/* サイドバーのガラス効果 */
+/* Sidebar */
 section[data-testid="stSidebar"] {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
 }
 
 section[data-testid="stSidebar"] > div {
-    background: transparent;
-}
-
-/* タイトルスタイル */
-h1 {
-    background: linear-gradient(90deg, #00d4ff, #7c3aed, #f472b6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 800;
-    text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
-}
-
-/* カード風のチャットメッセージ */
-.stChatMessage {
-    background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 16px !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    margin-bottom: 1rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-/* 入力フィールド */
-.stTextInput input {
-    background: rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 12px !important;
-    color: white !important;
-    padding: 0.75rem 1rem !important;
-}
-
-.stTextInput input::placeholder {
-    color: rgba(255, 255, 255, 0.5) !important;
-}
-
-/* ボタン */
-.stButton > button {
-    background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%) !important;
-    border: none !important;
-    border-radius: 12px !important;
-    color: white !important;
-    font-weight: 600 !important;
-    padding: 0.75rem 2rem !important;
-    transition: all 0.3s ease !important;
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4) !important;
-}
-
-.stButton > button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6) !important;
-}
-
-/* マルチセレクト */
-.stMultiSelect {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-}
-
-div[data-baseweb="select"] {
-    background: rgba(255, 255, 255, 0.08) !important;
-    border-radius: 10px !important;
-}
-
-/* アラート/通知 */
-.stSuccess, .stError, .stWarning, .stInfo {
-    background: rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(10px);
-    border-radius: 12px !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-}
-
-/* スライダー */
-.stSlider {
-    padding: 1rem 0;
-}
-
-/* ヘッダー */
-h2, h3 {
-    color: rgba(255, 255, 255, 0.9) !important;
-}
-
-/* 通常テキスト */
-p, span, label {
-    color: rgba(255, 255, 255, 0.85) !important;
-}
-
-/* リンク */
-a {
-    color: #00d4ff !important;
-}
-
-/* 区切り線 */
-hr {
-    border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* ダウンロードボタン */
-.stDownloadButton > button {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    backdrop-filter: blur(5px);
-}
-
-.stDownloadButton > button:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
-}
-
-/* スピナー背景 */
-.stSpinner > div {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
     padding: 1rem;
 }
 
-/* コードブロック */
-.stCodeBlock {
-    background: rgba(0, 0, 0, 0.3) !important;
+/* Cards */
+.canvas-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    min-height: 70vh;
+    border: 1px solid var(--border);
+}
+
+/* Chat Messages */
+.stChatMessage {
+    background: var(--bg-card) !important;
     border-radius: 12px !important;
+    margin-bottom: 0.75rem !important;
+    padding: 1rem !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+    border: 1px solid var(--border) !important;
+}
+
+/* Input */
+.stTextInput input, .stChatInputContainer textarea {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 24px !important;
+    padding: 0.75rem 1.25rem !important;
+    font-size: 1rem !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+.stTextInput input:focus, .stChatInputContainer textarea:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px var(--accent-light) !important;
+}
+
+/* Buttons */
+.stButton > button {
+    background: var(--accent) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 24px !important;
+    padding: 0.6rem 1.5rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s !important;
+}
+
+.stButton > button:hover {
+    background: #1557B0 !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Status badges */
+.stSuccess {
+    background: #E6F4EA !important;
+    color: var(--success) !important;
+    border-radius: 8px !important;
+}
+
+.stError {
+    background: #FCE8E6 !important;
+    color: var(--error) !important;
+    border-radius: 8px !important;
+}
+
+/* Headers */
+h1 {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+}
+
+h2, h3 {
+    color: var(--text-primary) !important;
+    font-weight: 500 !important;
+}
+
+/* Multiselect */
+div[data-baseweb="select"] {
+    background: var(--bg-card) !important;
+    border-radius: 8px !important;
+}
+
+/* Expander */
+.streamlit-expanderHeader {
+    background: var(--bg-card) !important;
+    border-radius: 8px !important;
+}
+
+/* Hide default elements */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+
+/* Download buttons */
+.stDownloadButton > button {
+    background: var(--bg-card) !important;
+    color: var(--accent) !important;
+    border: 1px solid var(--accent) !important;
+}
+
+.stDownloadButton > button:hover {
+    background: var(--accent-light) !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("💡 AI Idea Lab Pro")
-st.markdown("複数のAIがアイデアを **発展・エンハンス** し、最高のアイデアを生み出します")
-
-# --- APIキー状況の確認 ---
+# --- API Status ---
 api_status = check_api_keys()
 
-# --- サイドバー ---
+# --- Sidebar ---
 with st.sidebar:
-    st.header("🔑 API Keys 状況")
-    
-    # 設定状況を表示
+    st.markdown("## 🔑 API Keys")
     for provider, is_set in api_status.items():
         if is_set:
-            st.success(f"✅ {provider.upper()}")
+            st.success(f"✓ {provider.upper()}")
         else:
-            st.error(f"❌ {provider.upper()}")
-    
-    if not any(api_status.values()):
-        st.warning("⚠️ .envファイルにAPIキーを設定してください")
-        st.code("cp .env.example .env\n# .envを編集してAPIキーを追加", language="bash")
-    
+            st.error(f"✗ {provider.upper()}")
+
     st.markdown("---")
-    st.header("🤝 コラボレーター選択")
-    st.caption("議論に参加するAIを選択（複数可）")
-    
-    # モデル選択（カテゴリ別）- APIキーがあるものだけ有効化
-    st.subheader("OpenAI", divider="green")
+    st.markdown("## 🤝 コラボレーター")
+
     selected_openai = st.multiselect(
-        "OpenAIモデル",
+        "OpenAI",
         list(OPENAI_MODELS.keys()),
         default=["GPT-4o"] if api_status["openai"] else [],
-        disabled=not api_status["openai"],
-        label_visibility="collapsed"
+        disabled=not api_status["openai"]
     )
-    
-    st.subheader("Anthropic", divider="violet")
+
     selected_anthropic = st.multiselect(
-        "Anthropicモデル",
+        "Anthropic",
         list(ANTHROPIC_MODELS.keys()),
         default=["Claude Sonnet 4"] if api_status["anthropic"] else [],
-        disabled=not api_status["anthropic"],
-        label_visibility="collapsed"
+        disabled=not api_status["anthropic"]
     )
-    
-    st.subheader("Google", divider="blue")
+
     selected_google = st.multiselect(
-        "Googleモデル",
+        "Google",
         list(GOOGLE_MODELS.keys()),
         default=["Gemini 2.5 Flash"] if api_status["google"] else [],
-        disabled=not api_status["google"],
-        label_visibility="collapsed"
+        disabled=not api_status["google"]
     )
-    
-    # 選択されたモデル一覧
+
     selected_models = selected_openai + selected_anthropic + selected_google
-    
+
     st.markdown("---")
-    st.header("🎯 ファシリテーター")
-    
-    # ファシリテーター候補（選択されていないモデル & APIキーがあるもの）
+    st.markdown("## 🎯 ファシリテーター")
+
     available_facilitators = []
     for m, (provider, _) in ALL_MODELS.items():
         if m not in selected_models and api_status.get(provider, False):
             available_facilitators.append(m)
-    
+
     if available_facilitators:
-        facilitator = st.selectbox(
-            "まとめ役（議論には参加しません）",
-            available_facilitators,
-            index=0
-        )
+        facilitator = st.selectbox("まとめ役", available_facilitators)
     else:
-        st.warning("⚠️ ファシリテーター用に1つ以上のモデルを残してください")
+        st.warning("⚠️ モデルを残してください")
         facilitator = None
-    
+
     st.markdown("---")
-    st.header("⚙️ 設定")
+    st.markdown("## ⚙️ 設定")
     rounds = st.slider("ラウンド数", 1, 10, 2)
-    sleep_time = st.slider("生成間隔（秒）", 0, 5, 1)
-    
-    # 選択状況の表示
-    st.markdown("---")
-    if selected_models:
-        st.success(f"🤝 参加者: {len(selected_models)}体")
-        for m in selected_models:
-            st.write(f"  {get_avatar(m)} {m}")
-    if facilitator:
-        st.info(f"🎯 ファシリテーター: {get_avatar(facilitator)} {facilitator}")
 
 
-# --- クライアント初期化 ---
+# --- Initialize Clients ---
 @st.cache_resource
 def init_clients():
-    """APIクライアントを初期化（キャッシュ付き）"""
     clients = {"openai": None, "anthropic": None, "google": None}
-    
     if OPENAI_API_KEY:
         try:
             clients["openai"] = OpenAI(api_key=OPENAI_API_KEY)
-        except Exception as e:
-            st.error(f"OpenAI初期化エラー: {e}")
-    
+        except Exception:
+            pass
     if ANTHROPIC_API_KEY:
         try:
             clients["anthropic"] = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        except Exception as e:
-            st.error(f"Anthropic初期化エラー: {e}")
-    
+        except Exception:
+            pass
     if GOOGLE_API_KEY:
         try:
             genai.configure(api_key=GOOGLE_API_KEY)
             clients["google"] = True
-        except Exception as e:
-            st.error(f"Google初期化エラー: {e}")
-    
+        except Exception:
+            pass
     return clients
 
 
-# --- AI呼び出し関数 ---
+# --- AI Call Function ---
 def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, topic: str = "") -> str:
-    """指定されたAIに発言させる"""
     provider, model_id = ALL_MODELS[model_name]
-    
+
     if is_first:
-        prompt = f"テーマ: {topic}\n\nこのテーマについて、最初のアイデアを提案してください。ワクワクするような、可能性を感じる提案をお願いします。"
+        prompt = f"テーマ: {topic}\n\nこのテーマについて、最初のアイデアを提案してください。"
     else:
-        prompt = f"これまでの対話:\n{history_text}\n\n前の発言者のアイデアを受けて、さらに発展させてください。「Yes, And」の精神で、アイデアをエンハンスしてください。"
-    
+        prompt = f"これまでの対話:\n{history_text}\n\n前の発言者のアイデアを受けて、さらに発展させてください。"
+
     try:
         if provider == "openai":
             if not clients["openai"]:
-                return "❌ OpenAI APIキーが設定されていません"
-            
+                return "❌ OpenAI APIキーが未設定"
             params = {
                 "model": model_id,
                 "messages": [
@@ -318,14 +266,12 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
             }
             if model_id not in NO_TEMPERATURE_MODELS:
                 params["temperature"] = 0.9
-            
             response = clients["openai"].chat.completions.create(**params)
             return response.choices[0].message.content
-        
+
         elif provider == "anthropic":
             if not clients["anthropic"]:
-                return "❌ Anthropic APIキーが設定されていません"
-            
+                return "❌ Anthropic APIキーが未設定"
             response = clients["anthropic"].messages.create(
                 model=model_id,
                 max_tokens=1500,
@@ -334,177 +280,154 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
                 messages=[{"role": "user", "content": prompt}]
             )
             return response.content[0].text
-        
+
         elif provider == "google":
             if not clients["google"]:
-                return "❌ Google APIキーが設定されていません"
-            
+                return "❌ Google APIキーが未設定"
             model = genai.GenerativeModel(model_id)
             full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
             response = model.generate_content(full_prompt)
             return response.text
-            
+
     except Exception as e:
         return f"❌ Error ({model_name}): {e}"
 
 
-# --- ファシリテーター関数 ---
+# --- Facilitator Function ---
 def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, collaborators: list) -> str:
-    """対話を統合し、最終アイデアをまとめる"""
     provider, model_id = ALL_MODELS[facilitator_name]
-    
-    collab_list = "\n".join([f"- **{c}**: (このAIが加えた独自の視点・価値を2-3行で)" for c in collaborators])
-    
-    facilitator_prompt = FACILITATOR_PROMPT.format(
-        topic=topic,
-        collaborator_list=collab_list
-    )
+
+    collab_list = "\n".join([f"- **{c}**" for c in collaborators])
+    facilitator_prompt = FACILITATOR_PROMPT.format(topic=topic, collaborator_list=collab_list)
     full_prompt = f"{facilitator_prompt}\n\n--- 対話ログ ---\n{full_log}"
-    
+
     try:
         if provider == "openai":
             if not clients["openai"]:
-                return "❌ OpenAI APIキーが設定されていません"
-            
+                return "❌ OpenAI APIキーが未設定"
             params = {
                 "model": model_id,
                 "messages": [
-                    {"role": "system", "content": "あなたは創造的な対話のファシリテーターです。"},
+                    {"role": "system", "content": "あなたは対話のファシリテーターです。"},
                     {"role": "user", "content": full_prompt}
                 ]
             }
             if model_id not in NO_TEMPERATURE_MODELS:
                 params["temperature"] = 0.5
-            
             response = clients["openai"].chat.completions.create(**params)
             return response.choices[0].message.content
-        
+
         elif provider == "anthropic":
             if not clients["anthropic"]:
-                return "❌ Anthropic APIキーが設定されていません"
-            
+                return "❌ Anthropic APIキーが未設定"
             response = clients["anthropic"].messages.create(
                 model=model_id,
                 max_tokens=2500,
                 temperature=0.5,
-                system="あなたは創造的な対話のファシリテーターです。",
+                system="あなたは対話のファシリテーターです。",
                 messages=[{"role": "user", "content": full_prompt}]
             )
             return response.content[0].text
-        
+
         elif provider == "google":
             if not clients["google"]:
-                return "❌ Google APIキーが設定されていません"
-            
+                return "❌ Google APIキーが未設定"
             model = genai.GenerativeModel(model_id)
             response = model.generate_content(full_prompt)
             return response.text
-            
+
     except Exception as e:
         return f"❌ ファシリテーターエラー ({facilitator_name}): {e}"
 
 
-# --- メイン処理 ---
-topic = st.text_input(
-    "💭 アイデアを発展させたいテーマを入力してください", 
-    "地方の過疎化問題を解決する革新的なアプローチ"
-)
+# --- Main Layout ---
+st.title("💡 AI Idea Lab Pro")
 
-# バリデーション
-can_start = True
-error_messages = []
+col_input, col_canvas = st.columns([1, 1.5], gap="large")
 
-if len(selected_models) < 2:
-    error_messages.append("議論には2体以上のAIを選択してください")
-    can_start = False
+with col_input:
+    st.markdown("### 💭 テーマを入力")
+    topic = st.text_input(
+        "テーマ",
+        "地方の過疎化問題を解決する革新的なアプローチ",
+        label_visibility="collapsed"
+    )
 
-if not facilitator:
-    error_messages.append("ファシリテーターを選択してください")
-    can_start = False
+    # Validation
+    can_start = True
+    if len(selected_models) < 2:
+        st.warning("⚠️ 2体以上のAIを選択してください")
+        can_start = False
+    if not facilitator:
+        st.warning("⚠️ ファシリテーターを選択してください")
+        can_start = False
 
-if not any(api_status.values()):
-    error_messages.append(".envファイルにAPIキーを設定してください")
-    can_start = False
+    start_button = st.button("🚀 セッション開始", disabled=not can_start, type="primary", use_container_width=True)
 
-for msg in error_messages:
-    st.warning(f"⚠️ {msg}")
+with col_canvas:
+    canvas_placeholder = st.empty()
+    canvas_placeholder.markdown("""
+    <div class="canvas-card">
+        <h2>📋 Canvas</h2>
+        <p style="color: var(--text-secondary);">セッションを開始すると、ここにアイデアが表示されます</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-if st.button("🚀 アイデアセッション開始", disabled=not can_start, type="primary"):
+
+# --- Run Session ---
+if start_button:
     clients = init_clients()
-    
     history_log = []
-    chat_container = st.container()
-    
-    with chat_container:
-        st.info(f"💭 テーマ: {topic}")
-        
-        # 参加者表示
-        participants_str = " & ".join([f"**{get_avatar(m)} {m}**" for m in selected_models])
-        st.markdown(f"🤝 {participants_str}")
-        st.markdown(f"🎯 ファシリテーター: **{get_avatar(facilitator)} {facilitator}**")
+
+    with col_input:
+        st.markdown("---")
+        st.markdown(f"**テーマ:** {topic}")
+        st.markdown(f"**参加者:** {', '.join(selected_models)}")
+        st.markdown(f"**ファシリテーター:** {facilitator}")
         st.markdown("---")
 
-        # === 創造的対話フェーズ ===
+        # Collaboration Phase
         for i in range(rounds):
-            st.markdown(f"### 💫 ラウンド {i+1}")
-            
+            st.markdown(f"#### 💫 ラウンド {i+1}")
+
             for j, model in enumerate(selected_models):
                 with st.chat_message("assistant", avatar=get_avatar(model)):
-                    if i == 0 and j == 0:
-                        st.write(f"**{model}** 💡 最初のアイデア...")
-                    else:
-                        st.write(f"**{model}** ✨ アイデアを発展...")
-                    
+                    st.markdown(f"**{model}**")
+
                     if i == 0 and j == 0:
                         msg = ask_ai(model, clients, "", is_first=True, topic=topic)
                     else:
                         context_text = "\n\n".join(history_log[-6:])
                         msg = ask_ai(model, clients, context_text)
-                    
+
                     st.write(msg)
-                
+
                 history_log.append(f"[{model}]: {msg}")
-                time.sleep(sleep_time)
-        
-        st.success("🎉 対話セッション完了！アイデアを統合します...")
-        st.markdown("---")
-        
-        # === ファシリテーターフェーズ ===
-        st.markdown("## 🎯 アイデア統合")
-        
-        with st.spinner(f"🎯 {facilitator} がアイデアを統合中..."):
-            full_log = "\n\n".join(history_log)
-            conclusion = facilitate(facilitator, clients, topic, full_log, selected_models)
-        
+                time.sleep(0.5)
+
+        st.success("🎉 対話完了！まとめ中...")
+
+    # Update Canvas with results
+    full_log = "\n\n".join(history_log)
+
+    with st.spinner(f"🎯 {facilitator} がまとめ中..."):
+        conclusion = facilitate(facilitator, clients, topic, full_log, selected_models)
+
+    # Display on Canvas
+    with col_canvas:
+        canvas_placeholder.empty()
+        st.markdown(f"""
+        <div class="canvas-card">
+            <h2>🎯 アイデア統合レポート</h2>
+        </div>
+        """, unsafe_allow_html=True)
+
         with st.chat_message("assistant", avatar=get_avatar(facilitator)):
-            st.markdown(f"### 🎯 ファシリテーター: {facilitator}")
+            st.markdown(f"**{facilitator}**")
             st.markdown(conclusion)
-        
-        st.markdown("---")
+
         st.balloons()
-        
-        # ログダウンロード
-        participants_list = ", ".join(selected_models)
-        full_log_with_conclusion = (
-            f"テーマ: {topic}\n"
-            f"コラボレーター: {participants_list}\n"
-            f"ファシリテーター: {facilitator}\n\n"
-            f"{'='*50}\n💬 対話ログ\n{'='*50}\n\n"
-            f"{full_log}\n\n"
-            f"{'='*50}\n🎯 統合されたアイデア ({facilitator})\n{'='*50}\n\n"
-            f"{conclusion}"
-        )
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.download_button(
-                "📜 対話ログをダウンロード", 
-                full_log, 
-                file_name="idea_session_log.txt"
-            )
-        with col2:
-            st.download_button(
-                "📋 完全レポートをダウンロード", 
-                full_log_with_conclusion, 
-                file_name="idea_session_full_report.txt"
-            )
+
+        # Download
+        full_report = f"テーマ: {topic}\n\n{full_log}\n\n--- まとめ ---\n{conclusion}"
+        st.download_button("📥 レポートをダウンロード", full_report, "idea_lab_report.txt", use_container_width=True)
