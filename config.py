@@ -65,6 +65,9 @@ ALL_MODELS.update({k: ("google", v) for k, v in GOOGLE_MODELS.items()})
 SYSTEM_PROMPT = """
 You are a brainstorming expert who expands ideas creatively.
 
+**CRITICAL: Language Rule**
+You MUST respond in the SAME LANGUAGE as the topic provided. If the topic is in Japanese, respond in Japanese. If in Chinese, respond in Chinese. If in English, respond in English. Match the language exactly.
+
 **Your Role:**
 Build upon previous ideas while bringing **a completely different angle** to the discussion.
 
@@ -87,6 +90,9 @@ Propose ONE new idea in 3-5 sentences.
 
 FACILITATOR_PROMPT = """
 You are an expert at making complex discussions easy to understand.
+
+**CRITICAL: Language Rule**
+You MUST write the entire summary in the SAME LANGUAGE as the topic provided. If the topic is in Japanese, write in Japanese. If in Chinese, write in Chinese. If in English, write in English. Match the language exactly.
 
 Summarize the following dialogue so anyone can quickly grasp the key points.
 
