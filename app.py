@@ -657,7 +657,17 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
 
     collab_list = "\n".join([f"- **{c}**" for c in collaborators])
     facilitator_prompt = get_facilitator_prompt(expertise).format(topic=topic, collaborator_list=collab_list)
-    full_prompt = f"{facilitator_prompt}\n\n--- Discussion Log ---\n{full_log}"
+    
+    # Compress log for long discussions to avoid token limits
+    # Estimate: ~4 chars per token, keep under 8000 tokens for log
+    max_log_chars = 32000
+    if len(full_log) > max_log_chars:
+        # Keep first 25% and last 75% of discussion
+        split_point = len(full_log) // 4
+        compressed_log = full_log[:split_point] + "\n\n[... middle discussion compressed ...]\n\n" + full_log[-split_point*3:]
+        full_prompt = f"{facilitator_prompt}\n\n--- Discussion Log (Compressed) ---\n{compressed_log}"
+    else:
+        full_prompt = f"{facilitator_prompt}\n\n--- Discussion Log ---\n{full_log}"
 
     try:
         if provider == "openai":
@@ -680,7 +690,7 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
                 return "❌ Anthropic API key not configured"
             response = clients["anthropic"].messages.create(
                 model=model_id,
-                max_tokens=2500,
+                max_tokens=4000,  # Increased for longer syntheses
                 temperature=0.5,
                 system="You are a discussion facilitator.",
                 messages=[{"role": "user", "content": full_prompt}]
@@ -869,7 +879,9 @@ if start_button and can_start:
                                 if i == 0 and j == 0:
                                     msg = ask_ai(model, clients, "", is_first=True, topic=topic, temperature=creativity, expertise=expertise_level)
                                 else:
-                                    context_text = "\n\n".join(history_log[-6:])
+                                    # Dynamic context window: fewer messages for longer discussions
+                                    context_window = max(3, min(6, 20 // rounds))
+                                    context_text = "\n\n".join(history_log[-context_window:])
                                     msg = ask_ai(model, clients, context_text, temperature=creativity, expertise=expertise_level)
                                 
                                 # Check if the response is an error message
