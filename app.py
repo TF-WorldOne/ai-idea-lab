@@ -148,6 +148,16 @@ section[data-testid="stSidebar"] h2 {
     padding-bottom: 0.5rem;
 }
 
+/* Sidebar collapse/expand button - always visible */
+button[data-testid="stSidebarCollapseButton"],
+button[data-testid="baseButton-headerNoPadding"],
+[data-testid="collapsedControl"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 9999 !important;
+}
+
 /* ===== Cards & Containers ===== */
 .canvas-card {
     background: var(--bg-card);
