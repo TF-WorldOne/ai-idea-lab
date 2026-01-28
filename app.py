@@ -730,30 +730,31 @@ col_input, col_canvas = st.columns([1, 1], gap="large")
 
 with col_input:
     st.markdown("### ✦ Enter Your Topic")
-    topic = st.text_area(
-        "Topic",
-        "",
-        height=100,
-        label_visibility="collapsed",
-        placeholder="Describe your topic or idea here..."
-    )
+    with st.form(key="session_form"):
+        topic = st.text_area(
+            "Topic",
+            "",
+            height=100,
+            label_visibility="collapsed",
+            placeholder="Describe your topic or idea here... (Ctrl+Enter to start)"
+        )
+        start_button = st.form_submit_button("✦ Start Session", type="primary", use_container_width=True)
 
-    # Validation
+    # Validation (show warnings outside form)
     can_start = True
-    if not topic.strip():
-        st.warning("⚠️ Please enter a topic")
-        can_start = False
-    if len(selected_models) < 2:
-        st.warning("⚠️ Please select at least 2 AI collaborators")
-        can_start = False
-    if not facilitator:
-        st.warning("⚠️ Please select a facilitator")
-        can_start = False
-
-    start_button = st.button("✦ Start Session", disabled=not can_start, type="primary", use_container_width=True)
+    if start_button:
+        if not topic.strip():
+            st.warning("⚠️ Please enter a topic")
+            can_start = False
+        if len(selected_models) < 2:
+            st.warning("⚠️ Please select at least 2 AI collaborators")
+            can_start = False
+        if not facilitator:
+            st.warning("⚠️ Please select a facilitator")
+            can_start = False
 
 # --- Run Session ---
-if start_button:
+if start_button and can_start:
     clients = init_clients()
     history_log = []
     st.session_state.generating = True
