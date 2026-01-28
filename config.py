@@ -127,6 +127,52 @@ Identify 2-3 potential obstacles and how to address them.
 Topic: {topic}
 """
 
+# Expertise level descriptions for prompts
+EXPERTISE_LEVELS = {
+    "Beginner": """
+**Expertise Level: Beginner**
+- Use simple, everyday language that anyone can understand
+- Avoid jargon and technical terms completely
+- Explain concepts as if talking to someone with no background knowledge
+- Use relatable analogies and real-life examples
+- Keep sentences short and clear
+""",
+    "General": """
+**Expertise Level: General**
+- Use accessible language suitable for a general audience
+- Briefly explain any technical terms if used
+- Balance depth with clarity
+- Use common examples that most people can relate to
+""",
+    "Professional": """
+**Expertise Level: Professional**
+- Use industry-standard terminology appropriate for working professionals
+- Assume familiarity with common concepts in the field
+- Include specific methodologies, frameworks, or best practices
+- Reference relevant trends and developments
+""",
+    "Expert": """
+**Expertise Level: Expert**
+- Use specialized technical terminology freely
+- Assume deep domain knowledge
+- Discuss nuanced, cutting-edge aspects of the topic
+- Reference academic research, advanced methodologies, or emerging theories
+- Engage with complex trade-offs and edge cases
+"""
+}
+
+
+def get_system_prompt(expertise_level: str = "General") -> str:
+    """Get system prompt adjusted for expertise level"""
+    expertise_instruction = EXPERTISE_LEVELS.get(expertise_level, EXPERTISE_LEVELS["General"])
+    return SYSTEM_PROMPT + expertise_instruction
+
+
+def get_facilitator_prompt(expertise_level: str = "General") -> str:
+    """Get facilitator prompt adjusted for expertise level"""
+    expertise_instruction = EXPERTISE_LEVELS.get(expertise_level, EXPERTISE_LEVELS["General"])
+    return FACILITATOR_PROMPT + expertise_instruction
+
 
 def get_avatar(model_name: str) -> str:
     """Get avatar emoji from model name"""

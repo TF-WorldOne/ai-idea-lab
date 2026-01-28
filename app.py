@@ -13,7 +13,7 @@ import google.generativeai as genai
 from config import (
     OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY,
     OPENAI_MODELS, ANTHROPIC_MODELS, GOOGLE_MODELS, ALL_MODELS,
-    NO_TEMPERATURE_MODELS, SYSTEM_PROMPT, FACILITATOR_PROMPT,
+    NO_TEMPERATURE_MODELS, get_system_prompt, get_facilitator_prompt,
     get_avatar, check_api_keys
 )
 
@@ -581,7 +581,14 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("## ✦ Settings")
     rounds = st.slider("Number of Rounds", 1, 10, 2)
-    creativity = st.slider("Creativity", 0.0, 1.0, 0.7, 0.1, help="Higher = more creative, Lower = more focused")
+    creativity = st.slider("Creativity", 0.0, 1.0, 0.7, 0.1, help="Higher = more adventurous, Lower = more stable")
+
+    expertise_level = st.select_slider(
+        "Expertise Level",
+        options=["Beginner", "General", "Professional", "Expert"],
+        value="General",
+        help="Adjust discussion complexity and terminology"
+    )
 
 
 # --- Initialize Clients ---
@@ -608,8 +615,9 @@ def init_clients():
 
 
 # --- AI Call Function ---
-def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, topic: str = "", temperature: float = 0.7) -> str:
+def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, topic: str = "", temperature: float = 0.7, expertise: str = "General") -> str:
     provider, model_id = ALL_MODELS[model_name]
+    system_prompt = get_system_prompt(expertise)
 
     if is_first:
         prompt = f"Topic: {topic}\n\nPlease propose your initial idea on this topic."
@@ -623,7 +631,7 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
             params = {
                 "model": model_id,
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ]
             }
@@ -639,7 +647,7 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
                 model=model_id,
                 max_tokens=1500,
                 temperature=temperature,
-                system=SYSTEM_PROMPT,
+                system=system_prompt,
                 messages=[{"role": "user", "content": prompt}]
             )
             return response.content[0].text
@@ -648,7 +656,7 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
             if not clients["google"]:
                 return "❌ Google API key not configured"
             model = genai.GenerativeModel(model_id, generation_config={"temperature": temperature})
-            full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
+            full_prompt = f"{system_prompt}\n\n{prompt}"
             response = model.generate_content(full_prompt)
             return response.text
 
@@ -657,11 +665,11 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
 
 
 # --- Facilitator Function ---
-def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, collaborators: list) -> str:
+def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, collaborators: list, expertise: str = "General") -> str:
     provider, model_id = ALL_MODELS[facilitator_name]
 
     collab_list = "\n".join([f"- **{c}**" for c in collaborators])
-    facilitator_prompt = FACILITATOR_PROMPT.format(topic=topic, collaborator_list=collab_list)
+    facilitator_prompt = get_facilitator_prompt(expertise).format(topic=topic, collaborator_list=collab_list)
     full_prompt = f"{facilitator_prompt}\n\n--- Discussion Log ---\n{full_log}"
 
     try:
@@ -775,10 +783,10 @@ if start_button and can_start:
                     st.markdown(f'<span class="model-badge">{model}</span>', unsafe_allow_html=True)
 
                     if i == 0 and j == 0:
-                        msg = ask_ai(model, clients, "", is_first=True, topic=topic, temperature=creativity)
+                        msg = ask_ai(model, clients, "", is_first=True, topic=topic, temperature=creativity, expertise=expertise_level)
                     else:
                         context_text = "\n\n".join(history_log[-6:])
-                        msg = ask_ai(model, clients, context_text, temperature=creativity)
+                        msg = ask_ai(model, clients, context_text, temperature=creativity, expertise=expertise_level)
 
                     st.write(msg)
 
@@ -791,7 +799,7 @@ if start_button and can_start:
     full_log = "\n\n".join(history_log)
 
     with st.spinner(f"✦ {facilitator} is creating the summary..."):
-        conclusion = facilitate(facilitator, clients, topic, full_log, selected_models)
+        conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, expertise=expertise_level)
 
     # Save to session state
     st.session_state.conclusion = conclusion
