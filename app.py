@@ -839,26 +839,78 @@ if start_button and can_start:
         st.markdown(f"**Facilitator:** {facilitator}")
         st.markdown("---")
 
+        # Progress tracking
+        total_calls = rounds * len(selected_models)
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        current_call = 0
+
         # Collaboration Phase
-        for i in range(rounds):
-            st.markdown(f'<span class="round-badge">Round {i+1}</span>', unsafe_allow_html=True)
+        try:
+            for i in range(rounds):
+                st.markdown(f'<span class="round-badge">Round {i+1}/{rounds}</span>', unsafe_allow_html=True)
 
-            for j, model in enumerate(selected_models):
-                with st.chat_message("assistant", avatar=get_avatar(model)):
-                    st.markdown(f'<span class="model-badge">{model}</span>', unsafe_allow_html=True)
+                for j, model in enumerate(selected_models):
+                    current_call += 1
+                    progress = current_call / total_calls
+                    progress_bar.progress(progress)
+                    status_text.text(f"🤖 {model} is thinking... ({current_call}/{total_calls})")
+                    
+                    with st.chat_message("assistant", avatar=get_avatar(model)):
+                        st.markdown(f'<span class="model-badge">{model}</span>', unsafe_allow_html=True)
 
-                    if i == 0 and j == 0:
-                        msg = ask_ai(model, clients, "", is_first=True, topic=topic, temperature=creativity, expertise=expertise_level)
-                    else:
-                        context_text = "\n\n".join(history_log[-6:])
-                        msg = ask_ai(model, clients, context_text, temperature=creativity, expertise=expertise_level)
+                        # Retry logic for API calls
+                        max_retries = 2
+                        retry_count = 0
+                        msg = None
+                        
+                        while retry_count <= max_retries and msg is None:
+                            try:
+                                if i == 0 and j == 0:
+                                    msg = ask_ai(model, clients, "", is_first=True, topic=topic, temperature=creativity, expertise=expertise_level)
+                                else:
+                                    context_text = "\n\n".join(history_log[-6:])
+                                    msg = ask_ai(model, clients, context_text, temperature=creativity, expertise=expertise_level)
+                                
+                                # Check if the response is an error message
+                                if msg and msg.startswith("❌"):
+                                    if retry_count < max_retries:
+                                        st.warning(f"⚠️ Retry {retry_count + 1}/{max_retries} for {model}...")
+                                        time.sleep(2)
+                                        retry_count += 1
+                                        msg = None
+                                    else:
+                                        st.error(f"Failed after {max_retries} retries: {msg}")
+                                else:
+                                    break
+                            except Exception as e:
+                                if retry_count < max_retries:
+                                    st.warning(f"⚠️ Error occurred, retrying... ({retry_count + 1}/{max_retries})")
+                                    time.sleep(2)
+                                    retry_count += 1
+                                else:
+                                    msg = f"❌ Error after {max_retries} retries: {str(e)}"
+                                    st.error(msg)
+                                    break
 
-                    st.write(msg)
+                        if msg:
+                            st.write(msg)
+                            history_log.append(f"[{model}]: {msg}")
+                        else:
+                            error_msg = f"❌ {model} failed to respond"
+                            st.error(error_msg)
+                            history_log.append(f"[{model}]: {error_msg}")
 
-                history_log.append(f"[{model}]: {msg}")
-                time.sleep(0.5)
+                    time.sleep(0.5)
 
-        st.success("✦ Discussion complete! Generating summary...")
+            progress_bar.progress(1.0)
+            status_text.text("✅ Discussion complete!")
+            st.success("✦ Discussion complete! Generating summary...")
+            
+        except Exception as e:
+            st.error(f"❌ Session error: {str(e)}")
+            st.warning("⚠️ Partial results may be available. Attempting to generate summary...")
+
 
     # Update Canvas with results
     full_log = "\n\n".join(history_log)
