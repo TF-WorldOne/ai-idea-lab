@@ -1055,12 +1055,32 @@ def process_uploaded_file(uploaded_file, clients: dict) -> dict:
 def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, 
            topic: str = "", temperature: float = 0.7, expertise: str = "General",
            personality: str = None, url_content: dict = None, 
+           file_content: dict = None,
            dynamic_expertise: str = None) -> str:
     provider, model_id = ALL_MODELS[model_name]
     system_prompt = get_system_prompt(expertise, personality, dynamic_expertise)
     
-    # URL content integration
-    if url_content and url_content.get("success"):
+    # File content integration (highest priority)
+    if file_content and file_content.get("success"):
+        file_info = file_content.get("file_info", {})
+        file_context = f"""
+**Context: Analyzing Uploaded File**
+You are analyzing content from an uploaded file.
+The user's question/instruction is: "{topic}"
+
+**File Information:**
+- Filename: {file_info.get('name', 'unknown')}
+- Type: {file_info.get('icon', '')} {file_info.get('extension', '').upper()}
+
+**File Content:**
+{file_content["content"][:6000]}
+
+Focus your discussion on the file content while addressing the user's question.
+"""
+        system_prompt = system_prompt + "\n" + file_context
+    
+    # URL content integration (if no file)
+    elif url_content and url_content.get("success"):
         url_context = URL_ANALYSIS_PROMPT_ADDITION.format(
             article_content=url_content["content"][:6000],
             url=url_content.get("url", "")
@@ -1565,6 +1585,7 @@ if start_button and can_start:
                                     msg = ask_ai(model, clients, "", is_first=True, topic=topic, 
                                                  temperature=creativity, expertise=expertise_level,
                                                  personality=personality, url_content=url_content_data,
+                                                 file_content=st.session_state.uploaded_file_content,
                                                  dynamic_expertise=st.session_state.dynamic_expertise)
                                 else:
                                     # Dynamic context window: fewer messages for longer discussions
@@ -1573,6 +1594,7 @@ if start_button and can_start:
                                     msg = ask_ai(model, clients, context_text, 
                                                  temperature=creativity, expertise=expertise_level,
                                                  personality=personality, url_content=url_content_data,
+                                                 file_content=st.session_state.uploaded_file_content,
                                                  dynamic_expertise=st.session_state.dynamic_expertise)
                                 
                                 # Check if the response is an error message
