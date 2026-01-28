@@ -352,3 +352,28 @@ def get_personality_avatar(personality_id: str, model_name: str) -> str:
 def get_all_personality_ids() -> list:
     """Get list of all personality IDs"""
     return list(AI_PERSONALITIES.keys())
+
+
+# --- URL Reading Configuration ---
+URL_READING_CONFIG = {
+    "enabled": True,
+    "max_content_length": 8000,  # 最大文字数（トークン制限対策）
+    "timeout": 10,  # リクエストタイムアウト（秒）
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+}
+
+# URL検出用正規表現パターン
+URL_PATTERN = r'https?://[^\s<>"{}|\\^`\[\]]+'
+
+# URL分析用プロンプト追加
+URL_ANALYSIS_PROMPT_ADDITION = """
+**Context: Analyzing Web Content**
+You are analyzing content from a web article. The article text is provided below.
+Focus your discussion on interpreting, evaluating, and expanding upon the article's claims and implications.
+Do not simply summarize - provide your unique perspective based on your personality.
+
+**Article Content:**
+{article_content}
+
+**Article URL:** {url}
+"""

@@ -5,7 +5,10 @@ Three-column layout with no sidebar
 import streamlit as st
 import time
 import base64
+import re
+import requests
 from pathlib import Path
+from bs4 import BeautifulSoup
 from openai import OpenAI
 import anthropic
 import google.generativeai as genai
@@ -17,7 +20,9 @@ from config import (
     get_avatar, check_api_keys,
     # Personality system
     AI_PERSONALITIES, PERSONALITY_MODES,
-    get_personality_info, get_personality_avatar, get_all_personality_ids
+    get_personality_info, get_personality_avatar, get_all_personality_ids,
+    # URL reading
+    URL_READING_CONFIG, URL_PATTERN, URL_ANALYSIS_PROMPT_ADDITION
 )
 
 # --- Page Configuration ---
@@ -665,12 +670,95 @@ def init_clients():
     return clients
 
 
+# --- URL Detection and Content Fetching ---
+def detect_url(text: str) -> str | None:
+    """Detect first URL in text"""
+    match = re.search(URL_PATTERN, text)
+    return match.group(0) if match else None
+
+
+def fetch_url_content(url: str) -> dict:
+    """
+    Fetch and extract content from URL
+    Returns: {"success": bool, "title": str, "content": str, "error": str}
+    """
+    if not URL_READING_CONFIG.get("enabled", True):
+        return {"success": False, "title": "", "content": "", "error": "URL reading disabled"}
+    
+    try:
+        headers = {"User-Agent": URL_READING_CONFIG.get("user_agent", "")}
+        response = requests.get(
+            url, 
+            headers=headers, 
+            timeout=URL_READING_CONFIG.get("timeout", 10)
+        )
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding
+        
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Remove script, style, nav, footer elements
+        for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+            element.decompose()
+        
+        # Extract title
+        title = ""
+        if soup.title:
+            title = soup.title.string.strip() if soup.title.string else ""
+        elif soup.find('h1'):
+            title = soup.find('h1').get_text(strip=True)
+        
+        # Extract main content (try common article selectors)
+        content = ""
+        article_selectors = ['article', 'main', '.article-body', '.post-content', '#content', '.entry-content']
+        
+        for selector in article_selectors:
+            article = soup.select_one(selector)
+            if article:
+                content = article.get_text(separator='\n', strip=True)
+                break
+        
+        # Fallback: get body text
+        if not content:
+            body = soup.find('body')
+            if body:
+                content = body.get_text(separator='\n', strip=True)
+        
+        # Truncate if too long
+        max_length = URL_READING_CONFIG.get("max_content_length", 8000)
+        if len(content) > max_length:
+            content = content[:max_length] + "\n\n[... 記事の続きは省略されました ...]"
+        
+        return {
+            "success": True,
+            "title": title,
+            "content": content,
+            "url": url,
+            "error": ""
+        }
+        
+    except requests.Timeout:
+        return {"success": False, "title": "", "content": "", "error": "タイムアウト：サーバーからの応答がありません"}
+    except requests.RequestException as e:
+        return {"success": False, "title": "", "content": "", "error": f"取得エラー: {str(e)}"}
+    except Exception as e:
+        return {"success": False, "title": "", "content": "", "error": f"解析エラー: {str(e)}"}
+
+
 # --- AI Call Function ---
 def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, 
            topic: str = "", temperature: float = 0.7, expertise: str = "General",
-           personality: str = None) -> str:
+           personality: str = None, url_content: dict = None) -> str:
     provider, model_id = ALL_MODELS[model_name]
     system_prompt = get_system_prompt(expertise, personality)
+    
+    # URL content integration
+    if url_content and url_content.get("success"):
+        url_context = URL_ANALYSIS_PROMPT_ADDITION.format(
+            article_content=url_content["content"][:6000],
+            url=url_content.get("url", "")
+        )
+        system_prompt = system_prompt + "\n" + url_context
 
     if is_first:
         prompt = f"Topic: {topic}\n\nPlease propose your initial idea on this topic."
@@ -794,6 +882,11 @@ if "personality_assignments" not in st.session_state:
     st.session_state.personality_assignments = {}
 if "personality_mode" not in st.session_state:
     st.session_state.personality_mode = "auto"
+# URL reading
+if "url_content" not in st.session_state:
+    st.session_state.url_content = None
+if "detected_url" not in st.session_state:
+    st.session_state.detected_url = None
 
 
 # --- Main Layout ---
@@ -921,7 +1014,7 @@ with col_main:
             "",
             height=100,
             label_visibility="collapsed",
-            placeholder="Describe your topic or idea here... (Ctrl+Enter to start)"
+            placeholder="トピックを入力してください...\n💡 URLを貼り付けると記事内容を自動取得して議論します"
         )
         start_button = st.form_submit_button("✦ Start Session", type="primary", use_container_width=True)
 
@@ -1008,6 +1101,28 @@ if start_button and can_start:
     )
     current_assignments = st.session_state.personality_assignments
     
+    # URL Detection and Content Fetching
+    detected_url = detect_url(topic)
+    url_content_data = None
+    
+    if detected_url:
+        with st.spinner(f"🌐 記事を読み込み中... {detected_url[:50]}..."):
+            url_content_data = fetch_url_content(detected_url)
+            
+            if url_content_data["success"]:
+                st.success(f"✅ 記事を取得しました: {url_content_data['title'][:50]}...")
+                st.session_state.url_content = url_content_data
+                st.session_state.detected_url = detected_url
+                
+                # Show article preview
+                with st.expander("📄 取得した記事内容（プレビュー）", expanded=False):
+                    st.markdown(f"**タイトル:** {url_content_data['title']}")
+                    st.markdown(f"**URL:** {detected_url}")
+                    st.text(url_content_data['content'][:1000] + "...")
+            else:
+                st.warning(f"⚠️ 記事の取得に失敗: {url_content_data['error']}")
+                st.info("💡 URLなしのテキストとして議論を続けます")
+    
     clients = init_clients()
     history_log = []
     st.session_state.generating = True
@@ -1017,6 +1132,8 @@ if start_button and can_start:
         st.markdown(f"**Topic:** {topic}")
         st.markdown(f"**Participants:** {', '.join(selected_models)}")
         st.markdown(f"**Facilitator:** {facilitator}")
+        if detected_url and url_content_data and url_content_data.get("success"):
+            st.markdown(f"**📰 Article:** {url_content_data['title'][:60]}...")
         st.markdown("---")
 
         # Progress tracking
@@ -1061,14 +1178,14 @@ if start_button and can_start:
                                 if i == 0 and j == 0:
                                     msg = ask_ai(model, clients, "", is_first=True, topic=topic, 
                                                  temperature=creativity, expertise=expertise_level,
-                                                 personality=personality)
+                                                 personality=personality, url_content=url_content_data)
                                 else:
                                     # Dynamic context window: fewer messages for longer discussions
                                     context_window = max(3, min(6, 20 // rounds))
                                     context_text = "\n\n".join(history_log[-context_window:])
                                     msg = ask_ai(model, clients, context_text, 
                                                  temperature=creativity, expertise=expertise_level,
-                                                 personality=personality)
+                                                 personality=personality, url_content=url_content_data)
                                 
                                 # Check if the response is an error message
                                 if msg and msg.startswith("❌"):
