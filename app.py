@@ -1672,17 +1672,13 @@ if start_button and can_start:
             <p style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">Log length: {len(full_log)} chars</p>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Create streaming placeholder inside synthesis_container context
-        streaming_placeholder = st.empty()
 
     # Generate summary (this happens while chat logs remain visible)
     conclusion = None
     try:
         import time
         start_time = time.time()
-        conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, 
-                               expertise=expertise_level, streaming_placeholder=streaming_placeholder)
+        conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, expertise=expertise_level)
         elapsed = time.time() - start_time
         
         # Check if conclusion is actually an error message
