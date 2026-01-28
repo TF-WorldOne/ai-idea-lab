@@ -38,9 +38,7 @@ from config import (
     # Dynamic expertise
     EXPERTISE_EXTRACTION_PROMPT, DYNAMIC_EXPERTISE_PROMPT_TEMPLATE,
     # File upload
-    FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT,
-    # Facilitator
-    FACILITATOR_MODEL_FEATURES
+    FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT
 )
 
 # --- Page Configuration ---
@@ -1292,12 +1290,7 @@ with col_config:
                 available_facilitators.append(m)
 
         if available_facilitators:
-            facilitator = st.selectbox(
-                "Summary Host", 
-                available_facilitators, 
-                label_visibility="collapsed",
-                format_func=lambda x: f"{x} {FACILITATOR_MODEL_FEATURES.get(x, '')}"
-            )
+            facilitator = st.selectbox("Summary Host", available_facilitators, label_visibility="collapsed")
         else:
             st.warning("⚠️ Please keep at least one model available")
             facilitator = None
