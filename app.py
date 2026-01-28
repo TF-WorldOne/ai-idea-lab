@@ -150,7 +150,7 @@ section[data-testid="stSidebar"] h2 {
     box-shadow: 0 0 0 3px var(--accent-blue-dim) !important;
 }
 
-/* Text Area (テーマ入力欄) */
+/* Text Area (Topic Input) */
 .stTextArea textarea {
     background: var(--bg-input) !important;
     border: 2px solid var(--border-dim) !important;
@@ -403,7 +403,7 @@ with st.sidebar:
             st.markdown(f'<div class="api-badge disconnected">✗ {provider.upper()}</div>', unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("## 🤝 コラボレーター")
+    st.markdown("## 🤝 Collaborators")
 
     selected_openai = st.multiselect(
         "OpenAI",
@@ -429,7 +429,7 @@ with st.sidebar:
     selected_models = selected_openai + selected_anthropic + selected_google
 
     st.markdown("---")
-    st.markdown("## 🎯 ファシリテーター")
+    st.markdown("## 🎯 Facilitator")
 
     available_facilitators = []
     for m, (provider, _) in ALL_MODELS.items():
@@ -437,14 +437,14 @@ with st.sidebar:
             available_facilitators.append(m)
 
     if available_facilitators:
-        facilitator = st.selectbox("まとめ役", available_facilitators)
+        facilitator = st.selectbox("Summary Host", available_facilitators)
     else:
-        st.warning("⚠️ モデルを残してください")
+        st.warning("⚠️ Please keep at least one model available")
         facilitator = None
 
     st.markdown("---")
-    st.markdown("## ⚙️ 設定")
-    rounds = st.slider("ラウンド数", 1, 10, 2)
+    st.markdown("## ⚙️ Settings")
+    rounds = st.slider("Number of Rounds", 1, 10, 2)
 
 
 # --- Initialize Clients ---
@@ -475,14 +475,14 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
     provider, model_id = ALL_MODELS[model_name]
 
     if is_first:
-        prompt = f"テーマ: {topic}\n\nこのテーマについて、最初のアイデアを提案してください。"
+        prompt = f"Topic: {topic}\n\nPlease propose your initial idea on this topic."
     else:
-        prompt = f"これまでの対話:\n{history_text}\n\n前の発言者のアイデアを受けて、さらに発展させてください。"
+        prompt = f"Discussion so far:\n{history_text}\n\nBuild upon the previous ideas and add your unique perspective."
 
     try:
         if provider == "openai":
             if not clients["openai"]:
-                return "❌ OpenAI APIキーが未設定"
+                return "❌ OpenAI API key not configured"
             params = {
                 "model": model_id,
                 "messages": [
@@ -497,7 +497,7 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
 
         elif provider == "anthropic":
             if not clients["anthropic"]:
-                return "❌ Anthropic APIキーが未設定"
+                return "❌ Anthropic API key not configured"
             response = clients["anthropic"].messages.create(
                 model=model_id,
                 max_tokens=1500,
@@ -509,7 +509,7 @@ def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = F
 
         elif provider == "google":
             if not clients["google"]:
-                return "❌ Google APIキーが未設定"
+                return "❌ Google API key not configured"
             model = genai.GenerativeModel(model_id)
             full_prompt = f"{SYSTEM_PROMPT}\n\n{prompt}"
             response = model.generate_content(full_prompt)
@@ -525,16 +525,16 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
 
     collab_list = "\n".join([f"- **{c}**" for c in collaborators])
     facilitator_prompt = FACILITATOR_PROMPT.format(topic=topic, collaborator_list=collab_list)
-    full_prompt = f"{facilitator_prompt}\n\n--- 対話ログ ---\n{full_log}"
+    full_prompt = f"{facilitator_prompt}\n\n--- Discussion Log ---\n{full_log}"
 
     try:
         if provider == "openai":
             if not clients["openai"]:
-                return "❌ OpenAI APIキーが未設定"
+                return "❌ OpenAI API key not configured"
             params = {
                 "model": model_id,
                 "messages": [
-                    {"role": "system", "content": "あなたは対話のファシリテーターです。"},
+                    {"role": "system", "content": "You are a discussion facilitator."},
                     {"role": "user", "content": full_prompt}
                 ]
             }
@@ -545,25 +545,25 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
 
         elif provider == "anthropic":
             if not clients["anthropic"]:
-                return "❌ Anthropic APIキーが未設定"
+                return "❌ Anthropic API key not configured"
             response = clients["anthropic"].messages.create(
                 model=model_id,
                 max_tokens=2500,
                 temperature=0.5,
-                system="あなたは対話のファシリテーターです。",
+                system="You are a discussion facilitator.",
                 messages=[{"role": "user", "content": full_prompt}]
             )
             return response.content[0].text
 
         elif provider == "google":
             if not clients["google"]:
-                return "❌ Google APIキーが未設定"
+                return "❌ Google API key not configured"
             model = genai.GenerativeModel(model_id)
             response = model.generate_content(full_prompt)
             return response.text
 
     except Exception as e:
-        return f"❌ ファシリテーターエラー ({facilitator_name}): {e}"
+        return f"❌ Facilitator Error ({facilitator_name}): {e}"
 
 
 # --- Session State ---
@@ -581,10 +581,10 @@ st.title("💡 AI Idea Lab Pro")
 col_input, col_canvas = st.columns([1, 1.5], gap="large")
 
 with col_input:
-    st.markdown("### 💭 テーマを入力")
+    st.markdown("### 💭 Enter Your Topic")
     topic = st.text_area(
-        "テーマ",
-        "地方の過疎化問題を解決する革新的なアプローチ",
+        "Topic",
+        "Innovative approaches to solve rural depopulation",
         height=100,
         label_visibility="collapsed"
     )
@@ -592,13 +592,13 @@ with col_input:
     # Validation
     can_start = True
     if len(selected_models) < 2:
-        st.warning("⚠️ 2体以上のAIを選択してください")
+        st.warning("⚠️ Please select at least 2 AI collaborators")
         can_start = False
     if not facilitator:
-        st.warning("⚠️ ファシリテーターを選択してください")
+        st.warning("⚠️ Please select a facilitator")
         can_start = False
 
-    start_button = st.button("🚀 セッション開始", disabled=not can_start, type="primary", use_container_width=True)
+    start_button = st.button("🚀 Start Session", disabled=not can_start, type="primary", use_container_width=True)
 
 # --- Run Session ---
 if start_button:
@@ -607,9 +607,9 @@ if start_button:
 
     with col_input:
         st.markdown("---")
-        st.markdown(f"**テーマ:** {topic}")
-        st.markdown(f"**参加者:** {', '.join(selected_models)}")
-        st.markdown(f"**ファシリテーター:** {facilitator}")
+        st.markdown(f"**Topic:** {topic}")
+        st.markdown(f"**Participants:** {', '.join(selected_models)}")
+        st.markdown(f"**Facilitator:** {facilitator}")
         st.markdown("---")
 
         # Collaboration Phase
@@ -631,37 +631,37 @@ if start_button:
                 history_log.append(f"[{model}]: {msg}")
                 time.sleep(0.5)
 
-        st.success("🎉 対話完了！まとめ中...")
+        st.success("🎉 Discussion complete! Generating summary...")
 
     # Update Canvas with results
     full_log = "\n\n".join(history_log)
 
-    with st.spinner(f"🎯 {facilitator} がまとめ中..."):
+    with st.spinner(f"🎯 {facilitator} is creating the summary..."):
         conclusion = facilitate(facilitator, clients, topic, full_log, selected_models)
 
     # Save to session state
     st.session_state.conclusion = conclusion
     st.session_state.facilitator_name = facilitator
-    st.session_state.full_report = f"テーマ: {topic}\n\n{full_log}\n\n--- まとめ ---\n{conclusion}"
+    st.session_state.full_report = f"Topic: {topic}\n\n{full_log}\n\n--- Summary ---\n{conclusion}"
 
     st.balloons()
 
 # --- Canvas Display ---
 with col_canvas:
     if st.session_state.conclusion:
-        st.markdown("### 🎯 アイデア統合レポート")
+        st.markdown("### 🎯 Idea Synthesis Report")
         with st.chat_message("assistant", avatar=get_avatar(st.session_state.facilitator_name)):
             st.markdown(f'<span class="model-badge">{st.session_state.facilitator_name}</span>', unsafe_allow_html=True)
             st.markdown(st.session_state.conclusion)
 
         st.download_button(
-            "📥 レポートをダウンロード",
+            "📥 Download Report",
             st.session_state.full_report,
             "idea_lab_report.txt",
             use_container_width=True
         )
 
-        if st.button("🔄 リセット", use_container_width=True):
+        if st.button("🔄 Reset", use_container_width=True):
             st.session_state.conclusion = None
             st.session_state.facilitator_name = None
             st.session_state.full_report = None
@@ -670,6 +670,6 @@ with col_canvas:
         st.markdown("""
         <div class="canvas-card">
             <h2>📋 Canvas</h2>
-            <p>セッションを開始すると、ここにアイデア統合レポートが表示されます</p>
+            <p>Start a session to see the Idea Synthesis Report here</p>
         </div>
         """, unsafe_allow_html=True)

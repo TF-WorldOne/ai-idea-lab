@@ -1,25 +1,25 @@
 """
-AI Idea Lab - 設定管理モジュール
+AI Idea Lab - Configuration Module
 """
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# .envファイルを読み込み（既存の環境変数を上書き）
+# Load .env file (override existing environment variables)
 env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path, override=True)
 
 
 def _get_api_key(key_name: str) -> str:
-    """APIキーを取得（Streamlit Cloud対応）"""
-    # まずStreamlit Secretsを試す
+    """Get API key (Streamlit Cloud compatible)"""
+    # Try Streamlit Secrets first
     try:
         import streamlit as st
         if hasattr(st, 'secrets') and key_name in st.secrets:
             return st.secrets[key_name]
     except Exception:
         pass
-    # 次に環境変数を試す
+    # Fall back to environment variables
     return os.getenv(key_name, "")
 
 
@@ -28,8 +28,8 @@ OPENAI_API_KEY = _get_api_key("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = _get_api_key("ANTHROPIC_API_KEY")
 GOOGLE_API_KEY = _get_api_key("GOOGLE_API_KEY")
 
-# --- モデル定義 ---
-# temperatureをサポートしないモデル
+# --- Model Definitions ---
+# Models that don't support temperature parameter
 NO_TEMPERATURE_MODELS = {"gpt-5", "o3", "o4-mini"}
 
 OPENAI_MODELS = {
@@ -55,65 +55,65 @@ GOOGLE_MODELS = {
     "Gemini 3 Flash (Preview)": "gemini-3-flash-preview",
 }
 
-# 全モデルリスト（provider, model_id）
+# All models list (provider, model_id)
 ALL_MODELS = {}
 ALL_MODELS.update({k: ("openai", v) for k, v in OPENAI_MODELS.items()})
 ALL_MODELS.update({k: ("anthropic", v) for k, v in ANTHROPIC_MODELS.items()})
 ALL_MODELS.update({k: ("google", v) for k, v in GOOGLE_MODELS.items()})
 
-# --- プロンプト ---
+# --- Prompts ---
 SYSTEM_PROMPT = """
-あなたはアイデアを広げるブレインストーミングのプロです。
+You are a brainstorming expert who expands ideas creatively.
 
-【あなたの役割】
-前の人のアイデアを踏まえつつ、**別の角度**から新しいアイデアを出してください。
+**Your Role:**
+Build upon previous ideas while bringing **a completely different angle** to the discussion.
 
-以下のどれかのアプローチを選んで発言してください：
-1. **別の視点** - 違う立場（子供、お年寄り、外国人など）から見たらどうなる？
-2. **掛け合わせ** - 全然関係ない分野と組み合わせたら？
-3. **逆転の発想** - 常識の逆をやったら？
-4. **スケール変更** - もっと小さく/大きくしたら？
-5. **時間軸を変える** - 10年後/100年前だったら？
+Choose one of these approaches for your contribution:
+1. **Different Perspective** - How would this look from another viewpoint (child, elderly, foreigner, etc.)?
+2. **Cross-pollination** - What if we combined this with an unrelated field?
+3. **Reverse Thinking** - What if we did the opposite of conventional wisdom?
+4. **Scale Shift** - What if we made it much smaller or much larger?
+5. **Time Travel** - How would this work 10 years from now or 100 years ago?
 
-【ルール】
-- 前の人と同じことを言わない
-- 「いいね」「素晴らしい」などの肯定から始めなくていい
-- いきなり本題に入ってOK
-- 具体例を1つ入れる
+**Rules:**
+- Don't repeat what others have said
+- No need to start with "Great idea!" or similar affirmations
+- Jump straight into your idea
+- Include one concrete example
 
-【出力形式】
-3〜5文で、新しいアイデアを1つだけ提案してください。
+**Output Format:**
+Propose ONE new idea in 3-5 sentences.
 """
 
 FACILITATOR_PROMPT = """
-あなたは「難しい話をわかりやすくまとめる」プロです。
+You are an expert at making complex discussions easy to understand.
 
-以下の対話を、普通の人が読んでスッと理解できるようにまとめてください。
+Summarize the following dialogue so anyone can quickly grasp the key points.
 
-## まとめ
+## Summary
 
-### 一言で言うと
-このアイデアを1文で説明してください。小学生でもわかるように。
+### In One Sentence
+Explain this idea in one sentence that even a child could understand.
 
-### 話し合いで出たポイント
+### Key Points from Discussion
 {collaborator_list}
-それぞれの発言から、良かった点を1つずつ箇条書きで。
+List one highlight from each participant's contribution as bullet points.
 
-### 結局どうすればいい？
-明日から始められる具体的なアクションを3つ。
-「〜する」という形で、曖昧さなく書いてください。
+### What Should We Do?
+Three specific, actionable steps that can be started tomorrow.
+Write them as clear action items (e.g., "Create...", "Contact...", "Research...").
 
-### こんな人におすすめ
-このアイデアが役立ちそうな場面や人を2〜3個。
+### Who Is This For?
+2-3 scenarios or types of people who would benefit from this idea.
 
 ---
-難しい言葉は使わず、友達に説明するつもりで書いてください。
-テーマ: {topic}
+Write as if explaining to a friend. Avoid jargon and technical terms.
+Topic: {topic}
 """
 
 
 def get_avatar(model_name: str) -> str:
-    """モデル名からアバター絵文字を取得"""
+    """Get avatar emoji from model name"""
     if any(k in model_name for k in ["GPT", "o3", "o4"]):
         return "🟢"
     elif "Claude" in model_name:
@@ -124,7 +124,7 @@ def get_avatar(model_name: str) -> str:
 
 
 def check_api_keys() -> dict:
-    """APIキーの設定状況を確認"""
+    """Check API key status"""
     return {
         "openai": bool(OPENAI_API_KEY and not OPENAI_API_KEY.startswith("sk-xxxx")),
         "anthropic": bool(ANTHROPIC_API_KEY and not ANTHROPIC_API_KEY.startswith("sk-ant-xxxx")),
