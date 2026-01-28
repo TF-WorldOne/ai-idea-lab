@@ -22,7 +22,9 @@ from config import (
     AI_PERSONALITIES, PERSONALITY_MODES,
     get_personality_info, get_personality_avatar, get_all_personality_ids,
     # URL reading
-    URL_READING_CONFIG, URL_PATTERN, URL_ANALYSIS_PROMPT_ADDITION
+    URL_READING_CONFIG, URL_PATTERN, URL_ANALYSIS_PROMPT_ADDITION,
+    # Dynamic expertise
+    EXPERTISE_EXTRACTION_PROMPT, DYNAMIC_EXPERTISE_PROMPT_TEMPLATE
 )
 
 # --- Page Configuration ---
@@ -745,12 +747,58 @@ def fetch_url_content(url: str) -> dict:
         return {"success": False, "title": "", "content": "", "error": f"解析エラー: {str(e)}"}
 
 
+# --- Dynamic Expertise Extraction ---
+def extract_dynamic_expertise(content: str, clients: dict) -> str:
+    """
+    トピックまたは記事内容から動的に専門性コンテキストを生成
+    軽量モデルを使用してコスト節約
+    """
+    if not content or len(content.strip()) < 10:
+        return ""
+    
+    # 入力を適切な長さに制限
+    truncated_content = content[:3000]
+    
+    extraction_prompt = EXPERTISE_EXTRACTION_PROMPT.format(content=truncated_content)
+    
+    try:
+        # 軽量・高速モデルを優先使用
+        if clients.get("google"):
+            model = genai.GenerativeModel("gemini-2.0-flash-exp")
+            response = model.generate_content(extraction_prompt)
+            return response.text.strip()
+        elif clients.get("openai"):
+            client = clients["openai"]
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": extraction_prompt}],
+                temperature=0.3,
+                max_tokens=300
+            )
+            return response.choices[0].message.content.strip()
+        elif clients.get("anthropic"):
+            client = clients["anthropic"]
+            response = client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=300,
+                temperature=0.3,
+                messages=[{"role": "user", "content": extraction_prompt}]
+            )
+            return response.content[0].text.strip()
+    except Exception as e:
+        print(f"Expertise extraction failed: {e}")
+        return ""
+    
+    return ""
+
+
 # --- AI Call Function ---
 def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, 
            topic: str = "", temperature: float = 0.7, expertise: str = "General",
-           personality: str = None, url_content: dict = None) -> str:
+           personality: str = None, url_content: dict = None, 
+           dynamic_expertise: str = None) -> str:
     provider, model_id = ALL_MODELS[model_name]
-    system_prompt = get_system_prompt(expertise, personality)
+    system_prompt = get_system_prompt(expertise, personality, dynamic_expertise)
     
     # URL content integration
     if url_content and url_content.get("success"):
@@ -887,6 +935,9 @@ if "url_content" not in st.session_state:
     st.session_state.url_content = None
 if "detected_url" not in st.session_state:
     st.session_state.detected_url = None
+# Dynamic expertise
+if "dynamic_expertise" not in st.session_state:
+    st.session_state.dynamic_expertise = None
 
 
 # --- Main Layout ---
@@ -1124,6 +1175,23 @@ if start_button and can_start:
                 st.info("💡 URLなしのテキストとして議論を続けます")
     
     clients = init_clients()
+    
+    # Dynamic Expertise Extraction
+    # URL記事があればその内容を、なければトピックテキストを分析
+    content_to_analyze = ""
+    if url_content_data and url_content_data.get("success"):
+        content_to_analyze = url_content_data["content"]
+    else:
+        content_to_analyze = topic
+    
+    with st.spinner("🎓 議論に必要な専門性を分析中..."):
+        dynamic_expertise = extract_dynamic_expertise(content_to_analyze, clients)
+        st.session_state.dynamic_expertise = dynamic_expertise
+        
+        if dynamic_expertise:
+            with st.expander("🎓 自動検出された専門性", expanded=False):
+                st.markdown(dynamic_expertise)
+    
     history_log = []
     st.session_state.generating = True
 
@@ -1134,6 +1202,8 @@ if start_button and can_start:
         st.markdown(f"**Facilitator:** {facilitator}")
         if detected_url and url_content_data and url_content_data.get("success"):
             st.markdown(f"**📰 Article:** {url_content_data['title'][:60]}...")
+        if st.session_state.dynamic_expertise:
+            st.markdown(f"**🎓 Expertise:** {st.session_state.dynamic_expertise[:100]}...")
         st.markdown("---")
 
         # Progress tracking
@@ -1178,14 +1248,16 @@ if start_button and can_start:
                                 if i == 0 and j == 0:
                                     msg = ask_ai(model, clients, "", is_first=True, topic=topic, 
                                                  temperature=creativity, expertise=expertise_level,
-                                                 personality=personality, url_content=url_content_data)
+                                                 personality=personality, url_content=url_content_data,
+                                                 dynamic_expertise=st.session_state.dynamic_expertise)
                                 else:
                                     # Dynamic context window: fewer messages for longer discussions
                                     context_window = max(3, min(6, 20 // rounds))
                                     context_text = "\n\n".join(history_log[-context_window:])
                                     msg = ask_ai(model, clients, context_text, 
                                                  temperature=creativity, expertise=expertise_level,
-                                                 personality=personality, url_content=url_content_data)
+                                                 personality=personality, url_content=url_content_data,
+                                                 dynamic_expertise=st.session_state.dynamic_expertise)
                                 
                                 # Check if the response is an error message
                                 if msg and msg.startswith("❌"):

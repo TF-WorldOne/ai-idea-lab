@@ -162,15 +162,26 @@ EXPERTISE_LEVELS = {
 }
 
 
-def get_system_prompt(expertise_level: str = "General", personality: str = None) -> str:
-    """Get system prompt adjusted for expertise level and personality"""
+def get_system_prompt(expertise_level: str = "General", personality: str = None, 
+                      dynamic_expertise: str = None) -> str:
+    """Get system prompt with expertise level, personality, and dynamic expertise"""
     expertise_instruction = EXPERTISE_LEVELS.get(expertise_level, EXPERTISE_LEVELS["General"])
     
+    prompt = SYSTEM_PROMPT + expertise_instruction
+    
+    # Add personality
     if personality and personality in AI_PERSONALITIES:
         personality_instruction = AI_PERSONALITIES[personality]["system_prompt_addition"]
-        return SYSTEM_PROMPT + expertise_instruction + "\n" + personality_instruction
+        prompt += "\n" + personality_instruction
     
-    return SYSTEM_PROMPT + expertise_instruction
+    # Add dynamic expertise
+    if dynamic_expertise:
+        dynamic_section = DYNAMIC_EXPERTISE_PROMPT_TEMPLATE.format(
+            expertise_context=dynamic_expertise
+        )
+        prompt += "\n" + dynamic_section
+    
+    return prompt
 
 
 def get_facilitator_prompt(expertise_level: str = "General") -> str:
@@ -376,4 +387,24 @@ Do not simply summarize - provide your unique perspective based on your personal
 {article_content}
 
 **Article URL:** {url}
+"""
+
+
+# --- Dynamic Expertise Extraction ---
+EXPERTISE_EXTRACTION_PROMPT = """
+以下の内容を分析し、この議論に参加するために必要な専門知識を特定してください。
+
+**出力形式（必ず日本語で）:**
+この議論に必要な専門性として、以下の知識を持つ専門家として回答してください：
+[具体的な専門分野、地域知識、業界知識、歴史的文脈などを2-3行で簡潔に記述]
+
+**分析対象:**
+{content}
+"""
+
+DYNAMIC_EXPERTISE_PROMPT_TEMPLATE = """
+**Additional Expertise Context (動的専門性):**
+{expertise_context}
+
+Apply this specialized knowledge while maintaining your core personality traits.
 """
