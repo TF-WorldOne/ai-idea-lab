@@ -1629,6 +1629,8 @@ if start_button and can_start:
                                 "personality": personality,
                                 "personality_info": personality_info
                             })
+                            # Debug counter
+                            st.caption(f"✓ Message {current_call}/{total_calls} complete")
                         else:
                             error_msg = f"❌ {model} failed to respond"
                             st.error(error_msg)
