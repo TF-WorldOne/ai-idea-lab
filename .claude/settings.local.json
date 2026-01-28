@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(streamlit run:*)",
+      "Bash(python -c \"from config import ANTHROPIC_API_KEY, check_api_keys; print\\(''Key:'', repr\\(ANTHROPIC_API_KEY[:20] + ''...'' if ANTHROPIC_API_KEY else ''EMPTY''\\)\\); print\\(''Check:'', check_api_keys\\(\\)\\)\")",
+      "Bash(python:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: AI Idea Lab Pro\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(gh auth status:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(cmdkey /delete:git:https://github.com)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
