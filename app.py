@@ -38,7 +38,9 @@ from config import (
     # Dynamic expertise
     EXPERTISE_EXTRACTION_PROMPT, DYNAMIC_EXPERTISE_PROMPT_TEMPLATE,
     # File upload
-    FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT
+    FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT,
+    # Facilitator features
+    FACILITATOR_MODEL_FEATURES
 )
 
 # --- Page Configuration ---
@@ -1159,24 +1161,45 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
                 "messages": [
                     {"role": "system", "content": "You are a discussion facilitator."},
                     {"role": "user", "content": full_prompt}
-                ]
+                ],
+                "stream": True
             }
             if model_id not in NO_TEMPERATURE_MODELS:
                 params["temperature"] = 0.5
+            
             response = clients["openai"].chat.completions.create(**params)
-            return response.choices[0].message.content
+            
+            # Streaming display
+            placeholder = st.empty()
+            full_response = ""
+            for chunk in response:
+                if chunk.choices[0].delta.content:
+                    full_response += chunk.choices[0].delta.content
+                    placeholder.markdown(full_response)
+            
+            return full_response
 
         elif provider == "anthropic":
             if not clients["anthropic"]:
                 return "❌ Anthropic API key not configured"
-            response = clients["anthropic"].messages.create(
+            
+            # Streaming display
+            placeholder = st.empty()
+            full_response = ""
+            
+            with clients["anthropic"].messages.stream(
                 model=model_id,
-                max_tokens=4000,  # Increased for longer syntheses
+                max_tokens=4000,
                 temperature=0.5,
                 system="You are a discussion facilitator.",
                 messages=[{"role": "user", "content": full_prompt}]
-            )
-            return response.content[0].text
+            ) as stream:
+                for text in stream.text_stream:
+                    full_response += text
+                    placeholder.markdown(full_response)
+            
+            return full_response
+
 
         elif provider == "google":
             if not clients["google"]:
@@ -1290,7 +1313,12 @@ with col_config:
                 available_facilitators.append(m)
 
         if available_facilitators:
-            facilitator = st.selectbox("Summary Host", available_facilitators, label_visibility="collapsed")
+            facilitator = st.selectbox(
+                "Summary Host", 
+                available_facilitators, 
+                label_visibility="collapsed",
+                format_func=lambda x: f"{x} {FACILITATOR_MODEL_FEATURES.get(x, '')}"
+            )
         else:
             st.warning("⚠️ Please keep at least one model available")
             facilitator = None

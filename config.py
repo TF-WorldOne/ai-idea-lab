@@ -190,6 +190,21 @@ def get_facilitator_prompt(expertise_level: str = "General") -> str:
     return FACILITATOR_PROMPT + expertise_instruction
 
 
+# Facilitator Model Features for UI Display
+FACILITATOR_MODEL_FEATURES = {
+    "GPT-4o": "💰高品質・遅い",
+    "GPT-4o-mini": "⚡高速・経済的",
+    "Claude Sonnet 4.5": "💰高品質・遅い", 
+    "Claude Sonnet 4": "💰高品質・遅い",
+    "Claude Haiku 4.5": "⚡超高速・経済的",
+    "Claude Haiku 4": "⚡超高速・経済的",
+    "Gemini 2.5 Flash": "⚡高速",
+    "Gemini 2.5 Pro": "💰高品質",
+    "Gemini 2.0 Flash": "⚡ultra高速",
+    "Gemini 2.0 Flash Thinking": "🤔思考型・遅い"
+}
+
+
 def get_avatar(model_name: str) -> str:
     """Get avatar emoji from model name"""
     if any(k in model_name for k in ["GPT", "o3", "o4"]):
