@@ -7,11 +7,23 @@ import time
 import base64
 import re
 import requests
+import io
+import pandas as pd
 from pathlib import Path
 from bs4 import BeautifulSoup
+from PIL import Image
 from openai import OpenAI
 import anthropic
 import google.generativeai as genai
+
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
+try:
+    import pdfplumber
+except ImportError:
+    pdfplumber = None
 
 from config import (
     OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY,
@@ -24,7 +36,9 @@ from config import (
     # URL reading
     URL_READING_CONFIG, URL_PATTERN, URL_ANALYSIS_PROMPT_ADDITION,
     # Dynamic expertise
-    EXPERTISE_EXTRACTION_PROMPT, DYNAMIC_EXPERTISE_PROMPT_TEMPLATE
+    EXPERTISE_EXTRACTION_PROMPT, DYNAMIC_EXPERTISE_PROMPT_TEMPLATE,
+    # File upload
+    FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT
 )
 
 # --- Page Configuration ---
@@ -792,6 +806,251 @@ def extract_dynamic_expertise(content: str, clients: dict) -> str:
     return ""
 
 
+# --- File Upload Processing Functions ---
+def get_file_extension(filename: str) -> str:
+    """Get file extension from filename"""
+    return filename.split('.')[-1].lower() if '.' in filename else ""
+
+
+def extract_pdf_text(file_bytes: bytes) -> dict:
+    """
+    Extract text from PDF
+    Returns: {"success": bool, "content": str, "error": str, "pages": int}
+    """
+    try:
+        # Try pdfplumber first (better text extraction)
+        if pdfplumber:
+            pdf_file = io.BytesIO(file_bytes)
+            with pdfplumber.open(pdf_file) as pdf:
+                text = ""
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n\n"
+                
+                return {
+                    "success": True,
+                    "content": text.strip(),
+                    "error": "",
+                    "pages": len(pdf.pages)
+                }
+        
+        # Fallback to PyPDF2
+        elif PyPDF2:
+            pdf_file = io.BytesIO(file_bytes)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            text = ""
+            for page in pdf_reader.pages:
+                text += page.extract_text() + "\n\n"
+            
+            return {
+                "success": True,
+                "content": text.strip(),
+                "error": "",
+                "pages": len(pdf_reader.pages)
+            }
+        else:
+            return {"success": False, "content": "", "error": "PDF処理ライブラリがインストールされていません", "pages": 0}
+            
+    except Exception as e:
+        return {"success": False, "content": "", "error": f"PDF抽出エラー: {str(e)}", "pages": 0}
+
+
+def analyze_csv_excel(file_bytes: bytes, filename: str) -> dict:
+    """
+    Analyze CSV/Excel file and generate summary
+    Returns: {"success": bool, "content": str, "error": str}
+    """
+    try:
+        file_ext = get_file_extension(filename)
+        
+        # Read file
+        if file_ext == "csv":
+            df = pd.read_csv(io.BytesIO(file_bytes))
+        elif file_ext in ["xlsx", "xls"]:
+            df = pd.read_excel(io.BytesIO(file_bytes))
+        else:
+            return {"success": False, "content": "", "error": "非対応のファイル形式"}
+        
+        # Generate summary
+        summary = f"""
+# データファイル分析サマリー
+
+## 基本情報
+- ファイル名: {filename}
+- 行数: {len(df)}
+- 列数: {len(df.columns)}
+
+## カラム一覧
+{', '.join(df.columns.tolist())}
+
+## データプレビュー（先頭5行）
+{df.head().to_string()}
+
+## 統計サマリー
+{df.describe().to_string()}
+
+## データ型
+{df.dtypes.to_string()}
+"""
+        
+        return {"success": True, "content": summary, "error": ""}
+        
+    except Exception as e:
+        return {"success": False, "content": "", "error": f"データ分析エラー: {str(e)}"}
+
+
+def analyze_image_with_vision(image_bytes: bytes, clients: dict) -> dict:
+    """
+    Analyze image using Vision API
+    Returns: {"success": bool, "content": str, "error": str}
+    """
+    try:
+        # Try OpenAI GPT-4o (best vision capabilities)
+        if clients.get("openai"):
+            base64_image = base64.b64encode(image_bytes).decode('utf-8')
+            
+            response = clients["openai"].chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": VISION_ANALYSIS_PROMPT},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens=1000
+            )
+            return {"success": True, "content": response.choices[0].message.content, "error": ""}
+        
+        # Try Google Gemini (good vision support)
+        elif clients.get("google"):
+            image = Image.open(io.BytesIO(image_bytes))
+            model = genai.GenerativeModel("gemini-2.0-flash-exp")
+            response = model.generate_content([VISION_ANALYSIS_PROMPT, image])
+            return {"success": True, "content": response.text, "error": ""}
+        
+        # Try Anthropic Claude (vision support)
+        elif clients.get("anthropic"):
+            base64_image = base64.b64encode(image_bytes).decode('utf-8')
+            
+            response = clients["anthropic"].messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=1000,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/jpeg",
+                                    "data": base64_image,
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "text": VISION_ANALYSIS_PROMPT
+                            }
+                        ]
+                    }
+                ]
+            )
+            return {"success": True, "content": response.content[0].text, "error": ""}
+        
+        else:
+            return {"success": False, "content": "", "error": "Vision APIが利用できません（OpenAI/Google/Anthropic APIキーが必要）"}
+            
+    except Exception as e:
+        return {"success": False, "content": "", "error": f"画像分析エラー: {str(e)}"}
+
+
+def process_uploaded_file(uploaded_file, clients: dict) -> dict:
+    """
+    Process uploaded file and extract content
+    Returns: {"success": bool, "content": str, "error": str, "file_info": dict}
+    """
+    file_bytes = uploaded_file.read()
+    filename = uploaded_file.name
+    file_ext = get_file_extension(filename)
+    file_size_mb = len(file_bytes) / (1024 * 1024)
+    
+    # Check file size
+    max_size = FILE_UPLOAD_CONFIG.get("max_file_size_mb", 10)
+    if file_size_mb > max_size:
+        return {
+            "success": False,
+            "content": "",
+            "error": f"ファイルサイズが大きすぎます（{file_size_mb:.1f}MB > {max_size}MB）",
+            "file_info": {}
+        }
+    
+    # Check extension
+    allowed_exts = FILE_UPLOAD_CONFIG.get("allowed_extensions", {})
+    if file_ext not in allowed_exts:
+        return {
+            "success": False,
+            "content": "",
+            "error": f"非対応のファイル形式: .{file_ext}",
+            "file_info": {}
+        }
+    
+    file_info = {
+        "name": filename,
+        "extension": file_ext,
+        "size_mb": file_size_mb,
+        "icon": allowed_exts[file_ext]["icon"]
+    }
+    
+    # Process based on file type
+    if file_ext == "pdf":
+        result = extract_pdf_text(file_bytes)
+        result["file_info"] = file_info
+        return result
+    
+    elif file_ext in ["csv", "xlsx", "xls"]:
+        result = analyze_csv_excel(file_bytes, filename)
+        result["file_info"] = file_info
+        return result
+    
+    elif file_ext in ["png", "jpg", "jpeg"]:
+        result = analyze_image_with_vision(file_bytes, clients)
+        result["file_info"] = file_info
+        return result
+    
+    elif file_ext in ["txt", "md"]:
+        try:
+            content = file_bytes.decode('utf-8')
+            return {
+                "success": True,
+                "content": content,
+                "error": "",
+                "file_info": file_info
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "content": "",
+                "error": f"テキスト読み込みエラー: {str(e)}",
+                "file_info": file_info
+            }
+    
+    return {
+        "success": False,
+        "content": "",
+        "error": "未対応のファイル形式",
+        "file_info": file_info
+    }
+
+
 # --- AI Call Function ---
 def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, 
            topic: str = "", temperature: float = 0.7, expertise: str = "General",
@@ -938,6 +1197,11 @@ if "detected_url" not in st.session_state:
 # Dynamic expertise
 if "dynamic_expertise" not in st.session_state:
     st.session_state.dynamic_expertise = None
+# File upload
+if "uploaded_file_content" not in st.session_state:
+    st.session_state.uploaded_file_content = None
+if "last_uploaded_file" not in st.session_state:
+    st.session_state.last_uploaded_file = None
 
 
 # --- Main Layout ---
@@ -1059,6 +1323,40 @@ with col_config:
 with col_main:
     st.markdown("### ✦ Topic & Discussion")
     
+    # File uploader
+    uploaded_file = st.file_uploader(
+        "📎 ファイルをアップロード（オプション）",
+        type=list(FILE_UPLOAD_CONFIG["allowed_extensions"].keys()),
+        help="PDF、CSV、Excel、画像などをアップロードして内容を議論できます"
+    )
+    
+    # Process uploaded file
+    if uploaded_file is not None:
+        if st.session_state.uploaded_file_content is None or \
+           st.session_state.get("last_uploaded_file") != uploaded_file.name:
+            
+            with st.spinner(f"📄 {uploaded_file.name} を処理中..."):
+                clients = init_clients()
+                file_result = process_uploaded_file(uploaded_file, clients)
+                
+                if file_result["success"]:
+                    st.session_state.uploaded_file_content = file_result
+                    st.session_state.last_uploaded_file = uploaded_file.name
+                    
+                    file_info = file_result["file_info"]
+                    st.success(f"✅ ファイルを読み込みました: {file_info['icon']} {file_info['name']} ({file_info['size_mb']:.1f}MB)")
+                    
+                    # Preview
+                    with st.expander("📄 ファイル内容（プレビュー）", expanded=False):
+                        if file_info["extension"] in ["png", "jpg", "jpeg"]:
+                            uploaded_file.seek(0)
+                            st.image(uploaded_file, caption=file_info["name"])
+                            st.markdown("**AI分析結果:**")
+                        st.text(file_result["content"][:1500] + "...")
+                else:
+                    st.error(f"❌ {file_result['error']}")
+                    st.session_state.uploaded_file_content = None
+    
     with st.form(key="session_form"):
         topic = st.text_area(
             "Topic",
@@ -1177,12 +1475,22 @@ if start_button and can_start:
     clients = init_clients()
     
     # Dynamic Expertise Extraction
-    # URL記事があればその内容を、なければトピックテキストを分析
+    # Content Source Priority: File > URL > Topic
     content_to_analyze = ""
-    if url_content_data and url_content_data.get("success"):
+    content_source = "topic"
+    
+    if st.session_state.uploaded_file_content and st.session_state.uploaded_file_content.get("success"):
+        # File has highest priority
+        content_to_analyze = st.session_state.uploaded_file_content["content"]
+        content_source = "file"
+    elif url_content_data and url_content_data.get("success"):
+        # URL has second priority
         content_to_analyze = url_content_data["content"]
+        content_source = "url"
     else:
+        # Topic text as fallback
         content_to_analyze = topic
+        content_source = "topic"
     
     with st.spinner("🎓 議論に必要な専門性を分析中..."):
         dynamic_expertise = extract_dynamic_expertise(content_to_analyze, clients)
@@ -1198,12 +1506,20 @@ if start_button and can_start:
     with chat_container:
         st.markdown("---")
         st.markdown(f"**Topic:** {topic}")
+        
+        # Show content source
+        if st.session_state.uploaded_file_content:
+            file_info = st.session_state.uploaded_file_content["file_info"]
+            st.markdown(f"**📎 File:** {file_info['icon']} {file_info['name']}")
+        elif detected_url and url_content_data and url_content_data.get("success"):
+            st.markdown(f"**📰 Article:** {url_content_data['title'][:60]}...")
+        
         st.markdown(f"**Participants:** {', '.join(selected_models)}")
         st.markdown(f"**Facilitator:** {facilitator}")
-        if detected_url and url_content_data and url_content_data.get("success"):
-            st.markdown(f"**📰 Article:** {url_content_data['title'][:60]}...")
+        
         if st.session_state.dynamic_expertise:
             st.markdown(f"**🎓 Expertise:** {st.session_state.dynamic_expertise[:100]}...")
+        
         st.markdown("---")
 
         # Progress tracking

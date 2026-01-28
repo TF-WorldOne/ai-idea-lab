@@ -408,3 +408,31 @@ DYNAMIC_EXPERTISE_PROMPT_TEMPLATE = """
 
 Apply this specialized knowledge while maintaining your core personality traits.
 """
+
+
+# --- File Upload Configuration ---
+FILE_UPLOAD_CONFIG = {
+    "enabled": True,
+    "max_file_size_mb": 10,
+    "allowed_extensions": {
+        "pdf": {"mime": "application/pdf", "icon": "📄"},
+        "csv": {"mime": "text/csv", "icon": "📊"},
+        "xlsx": {"mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "icon": "📊"},
+        "xls": {"mime": "application/vnd.ms-excel", "icon": "📊"},
+        "txt": {"mime": "text/plain", "icon": "📝"},
+        "md": {"mime": "text/markdown", "icon": "📝"},
+        "png": {"mime": "image/png", "icon": "🖼️"},
+        "jpg": {"mime": "image/jpeg", "icon": "🖼️"},
+        "jpeg": {"mime": "image/jpeg", "icon": "🖼️"},
+    }
+}
+
+VISION_ANALYSIS_PROMPT = """
+この画像を詳細に分析してください。以下の内容を含めて記述してください：
+
+1. **何が映っているか**: 画像の主な内容
+2. **データ・情報**: グラフ、表、テキストなどがあれば内容を抽出
+3. **インサイト**: この画像から読み取れる重要なポイント
+
+できるだけ具体的に、議論の材料となる情報を提供してください。
+"""
