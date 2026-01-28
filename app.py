@@ -78,42 +78,14 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
     color: var(--text-primary) !important;
 }
 
-/* Hide Streamlit header background but keep sidebar toggle */
+/* Streamlit header - keep functional but minimal */
 header[data-testid="stHeader"] {
-    background: transparent !important;
-    height: auto !important;
-    min-height: 0 !important;
-}
-
-header[data-testid="stHeader"] > div {
-    background: transparent !important;
+    background: var(--bg-main) !important;
 }
 
 .main .block-container {
-    padding: 0 2rem 6rem 2rem !important;
-    padding-top: 0 !important;
-    margin-top: 0 !important;
+    padding: 1rem 2rem 6rem 2rem !important;
     max-width: 100% !important;
-}
-
-[data-testid="stAppViewContainer"] > .main {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-
-.stApp > header + div {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-
-[data-testid="stAppViewContainer"] {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-.main > div:first-child {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
 }
 
 /* ===== Typography & Headers ===== */
