@@ -1222,6 +1222,17 @@ if "uploaded_file_content" not in st.session_state:
     st.session_state.uploaded_file_content = None
 if "last_uploaded_file" not in st.session_state:
     st.session_state.last_uploaded_file = None
+# Loop tracking for rerun protection
+if "loop_in_progress" not in st.session_state:
+    st.session_state.loop_in_progress = False
+if "loop_current_round" not in st.session_state:
+    st.session_state.loop_current_round = 0
+if "loop_current_model" not in st.session_state:
+    st.session_state.loop_current_model = 0
+if "loop_config" not in st.session_state:
+    st.session_state.loop_config = None
+if "history_log" not in st.session_state:
+    st.session_state.history_log = []
 
 
 # --- Main Layout ---
@@ -1457,11 +1468,27 @@ def assign_personalities(models: list, mode: str) -> dict:
     
     return assignments
 
+# Start new session or continue interrupted one
+should_run_loop = False
 if start_button and can_start:
-    # Clear previous session
+    # New session - clear and initialize
     st.session_state.discussion_history = []
+    st.session_state.history_log = []
     st.session_state.current_topic = topic
     st.session_state.current_participants = selected_models
+    st.session_state.loop_in_progress = True
+    st.session_state.loop_current_round = 0
+    st.session_state.loop_current_model = 0
+    
+    # Save loop config for rerun continuation
+    st.session_state.loop_config = {
+        "topic": topic,
+        "rounds": rounds,
+        "selected_models": selected_models,
+        "facilitator": facilitator,
+        "creativity": creativity,
+        "expertise_level": expertise_level
+    }
     
     # Assign personalities
     st.session_state.personality_assignments = assign_personalities(
@@ -1542,10 +1569,9 @@ if start_button and can_start:
         
         st.markdown("---")
 
-        # Progress tracking
+        # Progress tracking - use simple counter instead of st.empty()
         total_calls = rounds * len(selected_models)
         progress_bar = st.progress(0)
-        status_text = st.empty()
         current_call = 0
 
         # Collaboration Phase
@@ -1562,7 +1588,7 @@ if start_button and can_start:
                     personality = current_assignments.get(model)
                     personality_info = get_personality_info(personality)
                     
-                    status_text.text(f"{personality_info['emoji']} {model} ({personality_info['name_ja']}) is thinking... ({current_call}/{total_calls})")
+                    # Removed status_text.text() to reduce UI updates
                     
                     with st.chat_message("assistant", avatar=get_personality_avatar(personality, model)):
                         # Display model name and personality badge
