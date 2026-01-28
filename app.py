@@ -79,7 +79,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
 }
 
 .main .block-container {
-    padding: 1.5rem 2rem 6rem 2rem;
+    padding: 0.5rem 2rem 6rem 2rem;
     max-width: 100% !important;
 }
 
