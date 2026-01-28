@@ -84,12 +84,29 @@ header[data-testid="stHeader"] {
 }
 
 .main .block-container {
-    padding: 1rem 2rem 6rem 2rem;
-    padding-top: 1rem !important;
+    padding: 0 2rem 6rem 2rem !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
     max-width: 100% !important;
 }
 
 [data-testid="stAppViewContainer"] > .main {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+.stApp > header + div {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+[data-testid="stAppViewContainer"] {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.main > div:first-child {
+    margin-top: 0 !important;
     padding-top: 0 !important;
 }
 
