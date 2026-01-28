@@ -501,6 +501,29 @@ header {visibility: hidden;}
     animation: starfall 3s ease-in forwards, sparkle 0.5s ease-in-out infinite;
     text-shadow: 0 0 10px rgba(212, 175, 55, 0.8), 0 0 20px rgba(212, 175, 55, 0.5);
 }
+
+/* ===== Report Title (Light Font) ===== */
+.report-title {
+    font-weight: 300 !important;
+    letter-spacing: 0.05em !important;
+    color: var(--accent-gold) !important;
+}
+
+/* ===== Generating Spinner ===== */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.generating-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 20px auto;
+    border: 3px solid var(--border);
+    border-top: 3px solid var(--accent-gold);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -688,6 +711,8 @@ if "facilitator_name" not in st.session_state:
     st.session_state.facilitator_name = None
 if "full_report" not in st.session_state:
     st.session_state.full_report = None
+if "generating" not in st.session_state:
+    st.session_state.generating = False
 
 
 # --- Main Layout ---
@@ -728,6 +753,7 @@ with col_input:
 if start_button:
     clients = init_clients()
     history_log = []
+    st.session_state.generating = True
 
     with col_input:
         st.markdown("---")
@@ -767,13 +793,14 @@ if start_button:
     st.session_state.conclusion = conclusion
     st.session_state.facilitator_name = facilitator
     st.session_state.full_report = f"Topic: {topic}\n\n{full_log}\n\n--- Summary ---\n{conclusion}"
+    st.session_state.generating = False
 
     show_star_celebration()
 
 # --- Canvas Display ---
 with col_canvas:
     if st.session_state.conclusion:
-        st.markdown("### ✦ Idea Synthesis Report")
+        st.markdown('<h3 class="report-title">✦ Idea Synthesis Report</h3>', unsafe_allow_html=True)
         with st.chat_message("assistant", avatar=get_avatar(st.session_state.facilitator_name)):
             st.markdown(f'<span class="model-badge">{st.session_state.facilitator_name}</span>', unsafe_allow_html=True)
             st.markdown(st.session_state.conclusion)
@@ -781,7 +808,7 @@ with col_canvas:
         st.download_button(
             "✦ Download Report",
             st.session_state.full_report,
-            "xexon_idea_report.txt",
+            "xthink_idea_report.txt",
             use_container_width=True
         )
 
@@ -790,10 +817,18 @@ with col_canvas:
             st.session_state.facilitator_name = None
             st.session_state.full_report = None
             st.rerun()
+    elif st.session_state.generating:
+        st.markdown("""
+        <div class="canvas-card">
+            <h2 class="report-title">✦ Idea Synthesis Report</h2>
+            <div class="generating-spinner"></div>
+            <p>Synthesizing discussion...</p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         st.markdown("""
         <div class="canvas-card">
-            <h2>✦ Idea Synthesis Report</h2>
+            <h2 class="report-title">✦ Idea Synthesis Report</h2>
             <p>Start a session to see the AI-generated summary here</p>
         </div>
         """, unsafe_allow_html=True)
