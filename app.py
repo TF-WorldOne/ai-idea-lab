@@ -1,9 +1,11 @@
 """
-AI Idea Lab Pro - Modern AI Dark Theme Edition
-Split view with chat on left and canvas on right
+XEXON AI Idea Lab - Premium Edition
+Split view with chat on left and synthesis report on right
 """
 import streamlit as st
 import time
+import base64
+from pathlib import Path
 from openai import OpenAI
 import anthropic
 import google.generativeai as genai
@@ -17,34 +19,42 @@ from config import (
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="AI Idea Lab Pro",
-    page_icon="💡",
+    page_title="XEXON AI Idea Lab",
+    page_icon="✦",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- Modern AI Dark Theme CSS ---
+# --- Logo Helper Function ---
+def get_logo_base64():
+    """Load logo as base64 for embedding"""
+    logo_path = Path(__file__).parent / "assets" / "xexon_logo.png"
+    if logo_path.exists():
+        with open(logo_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    return None
+
+# --- XEXON Premium Gold & Black Theme CSS ---
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 
-/* ===== CSS Variables (Modern AI Dark - Deep Sky Blue) ===== */
+/* ===== CSS Variables (XEXON Premium - Gold & Black) ===== */
 :root {
-    --bg-main: #0E1117;
-    --bg-sidebar: #161B22;
-    --bg-card: #1F2937;
-    --bg-input: #0D1117;
-    --text-primary: #E6E6E6;
-    --text-secondary: #A1A1AA;
-    --accent-blue: #1E90FF;
-    --accent-blue-hover: #1873CC;
-    --accent-purple: #8B5CF6;
-    --accent-blue-dim: rgba(30, 144, 255, 0.2);
-    --accent-purple-dim: rgba(139, 92, 246, 0.2);
-    --success: #10B981;
+    --bg-main: #050505;
+    --bg-sidebar: #0A0A0A;
+    --bg-card: #1F1F1F;
+    --bg-input: #0A0A0A;
+    --text-primary: #F0F0F0;
+    --text-secondary: #A0A0A0;
+    --accent-gold: #D4AF37;
+    --accent-gold-hover: #B8960F;
+    --accent-gold-dim: rgba(212, 175, 55, 0.2);
+    --accent-gold-glow: rgba(212, 175, 55, 0.4);
+    --success: #D4AF37;
     --error: #EF4444;
-    --border: #374151;
-    --border-dim: #30363D;
+    --border: #2A2A2A;
+    --border-dim: #1A1A1A;
 }
 
 /* ===== Base Styles ===== */
@@ -63,15 +73,16 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
 h1 {
     font-weight: 800 !important;
     letter-spacing: -0.03em !important;
-    background: linear-gradient(135deg, #1E90FF 0%, var(--accent-purple) 100%);
+    background: linear-gradient(135deg, #D4AF37 0%, #F5E6A3 50%, #D4AF37 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     font-size: 2.5rem !important;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
 }
 
 h2 {
-    color: var(--text-primary) !important;
+    color: var(--accent-gold) !important;
     font-weight: 700 !important;
     letter-spacing: -0.02em !important;
 }
@@ -86,6 +97,19 @@ p, span, label, div {
     color: var(--text-primary) !important;
 }
 
+/* ===== Logo Container ===== */
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-bottom: 1rem;
+}
+
+.logo-container img {
+    height: 60px;
+    width: auto;
+}
+
 /* ===== Sidebar ===== */
 section[data-testid="stSidebar"] {
     background: var(--bg-sidebar) !important;
@@ -97,11 +121,13 @@ section[data-testid="stSidebar"] > div {
 }
 
 section[data-testid="stSidebar"] h2 {
-    font-size: 0.9rem !important;
+    font-size: 0.85rem !important;
     text-transform: uppercase;
-    letter-spacing: 0.05em !important;
-    color: var(--text-secondary) !important;
+    letter-spacing: 0.1em !important;
+    color: var(--accent-gold) !important;
     margin-bottom: 0.75rem !important;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
 }
 
 /* ===== Cards & Containers ===== */
@@ -111,10 +137,21 @@ section[data-testid="stSidebar"] h2 {
     padding: 2rem;
     border: 1px solid var(--border);
     min-height: 70vh;
+    position: relative;
+}
+
+.canvas-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
 }
 
 .canvas-card h2 {
-    color: var(--text-primary) !important;
+    color: var(--accent-gold) !important;
     margin-bottom: 1rem;
 }
 
@@ -143,29 +180,29 @@ section[data-testid="stSidebar"] h2 {
     padding: 0.75rem 1rem !important;
     font-size: 1rem !important;
     color: var(--text-primary) !important;
-    transition: all 0.2s ease !important;
+    transition: all 0.3s ease !important;
 }
 
 .stTextInput input:focus {
-    border-color: var(--accent-blue) !important;
-    box-shadow: 0 0 0 3px var(--accent-blue-dim) !important;
+    border-color: var(--accent-gold) !important;
+    box-shadow: 0 0 0 3px var(--accent-gold-dim) !important;
 }
 
 /* Text Area (Topic Input) */
 .stTextArea textarea {
     background: var(--bg-input) !important;
-    border: 2px solid var(--border-dim) !important;
+    border: 2px solid var(--border) !important;
     border-radius: 12px !important;
     padding: 1rem !important;
     font-size: 1.1rem !important;
     color: var(--text-primary) !important;
-    transition: all 0.2s ease !important;
+    transition: all 0.3s ease !important;
     min-height: 100px !important;
 }
 
 .stTextArea textarea:focus {
-    border-color: var(--accent-blue) !important;
-    box-shadow: 0 0 0 4px var(--accent-blue-dim) !important;
+    border-color: var(--accent-gold) !important;
+    box-shadow: 0 0 0 4px var(--accent-gold-dim), 0 0 20px var(--accent-gold-dim) !important;
 }
 
 .stTextArea textarea::placeholder {
@@ -174,21 +211,23 @@ section[data-testid="stSidebar"] h2 {
 
 /* ===== Buttons ===== */
 .stButton > button {
-    background: var(--accent-blue) !important;
-    color: white !important;
+    background: linear-gradient(135deg, #D4AF37 0%, #B8960F 100%) !important;
+    color: #050505 !important;
     border: none !important;
     border-radius: 8px !important;
     padding: 0.75rem 1.5rem !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     font-size: 1rem !important;
-    transition: all 0.2s ease !important;
-    box-shadow: 0 2px 8px rgba(30, 144, 255, 0.3) !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 12px rgba(212, 175, 55, 0.3) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .stButton > button:hover {
-    background: var(--accent-blue-hover) !important;
-    box-shadow: 0 4px 16px rgba(30, 144, 255, 0.4) !important;
-    transform: translateY(-1px) !important;
+    background: linear-gradient(135deg, #F5E6A3 0%, #D4AF37 100%) !important;
+    box-shadow: 0 4px 20px rgba(212, 175, 55, 0.5) !important;
+    transform: translateY(-2px) !important;
 }
 
 .stButton > button:active {
@@ -197,6 +236,7 @@ section[data-testid="stSidebar"] h2 {
 
 .stButton > button:disabled {
     background: var(--border) !important;
+    color: var(--text-secondary) !important;
     box-shadow: none !important;
     cursor: not-allowed !important;
 }
@@ -204,25 +244,25 @@ section[data-testid="stSidebar"] h2 {
 /* Download Button */
 .stDownloadButton > button {
     background: transparent !important;
-    color: var(--accent-blue) !important;
-    border: 1px solid var(--accent-blue) !important;
+    color: var(--accent-gold) !important;
+    border: 1px solid var(--accent-gold) !important;
     box-shadow: none !important;
 }
 
 .stDownloadButton > button:hover {
-    background: var(--accent-blue-dim) !important;
-    box-shadow: none !important;
+    background: var(--accent-gold-dim) !important;
+    box-shadow: 0 0 15px var(--accent-gold-dim) !important;
 }
 
 /* ===== Status Badges (Pill Style) ===== */
 .stSuccess {
-    background: rgba(16, 185, 129, 0.15) !important;
-    color: var(--success) !important;
+    background: rgba(212, 175, 55, 0.15) !important;
+    color: var(--accent-gold) !important;
     border-radius: 9999px !important;
     padding: 0.25rem 0.75rem !important;
     font-size: 0.875rem !important;
     font-weight: 500 !important;
-    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
 }
 
 .stError {
@@ -236,13 +276,13 @@ section[data-testid="stSidebar"] h2 {
 }
 
 .stWarning {
-    background: rgba(245, 158, 11, 0.15) !important;
-    color: #F59E0B !important;
+    background: rgba(212, 175, 55, 0.15) !important;
+    color: var(--accent-gold) !important;
     border-radius: 9999px !important;
     padding: 0.25rem 0.75rem !important;
     font-size: 0.875rem !important;
     font-weight: 500 !important;
-    border: 1px solid rgba(245, 158, 11, 0.3) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
 }
 
 /* ===== Multiselect & Select ===== */
@@ -257,14 +297,14 @@ div[data-baseweb="select"] > div {
 }
 
 div[data-baseweb="select"]:focus-within > div {
-    border-color: var(--accent-blue) !important;
-    box-shadow: 0 0 0 3px var(--accent-blue-dim) !important;
+    border-color: var(--accent-gold) !important;
+    box-shadow: 0 0 0 3px var(--accent-gold-dim) !important;
 }
 
 /* Selected tags in multiselect */
 span[data-baseweb="tag"] {
-    background: var(--accent-blue-dim) !important;
-    color: var(--accent-blue) !important;
+    background: var(--accent-gold-dim) !important;
+    color: var(--accent-gold) !important;
     border-radius: 6px !important;
     border: none !important;
 }
@@ -281,7 +321,7 @@ li[data-baseweb="menu-item"] {
 }
 
 li[data-baseweb="menu-item"]:hover {
-    background: var(--accent-blue-dim) !important;
+    background: var(--accent-gold-dim) !important;
 }
 
 /* ===== Slider ===== */
@@ -290,26 +330,26 @@ li[data-baseweb="menu-item"]:hover {
 }
 
 .stSlider > div > div > div > div {
-    background: var(--accent-blue) !important;
+    background: var(--accent-gold) !important;
 }
 
 .stSlider [data-baseweb="slider"] [role="slider"] {
-    background: var(--accent-blue) !important;
-    border-color: var(--accent-blue) !important;
+    background: var(--accent-gold) !important;
+    border-color: var(--accent-gold) !important;
 }
 
 /* ===== Spinner ===== */
 .stSpinner > div {
-    border-top-color: var(--accent-blue) !important;
+    border-top-color: var(--accent-gold) !important;
 }
 
 /* ===== Markdown Links ===== */
 a {
-    color: var(--accent-blue) !important;
+    color: var(--accent-gold) !important;
 }
 
 a:hover {
-    color: var(--accent-purple) !important;
+    color: #F5E6A3 !important;
 }
 
 /* ===== Divider ===== */
@@ -339,7 +379,7 @@ header {visibility: hidden;}
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
+    background: var(--accent-gold);
 }
 
 /* ===== Custom Badge Component ===== */
@@ -355,9 +395,9 @@ header {visibility: hidden;}
 }
 
 .api-badge.connected {
-    background: rgba(16, 185, 129, 0.15);
-    color: #10B981;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: rgba(212, 175, 55, 0.15);
+    color: #D4AF37;
+    border: 1px solid rgba(212, 175, 55, 0.3);
 }
 
 .api-badge.disconnected {
@@ -369,24 +409,46 @@ header {visibility: hidden;}
 /* ===== Round indicator ===== */
 .round-badge {
     display: inline-block;
-    background: linear-gradient(135deg, #1E90FF 0%, var(--accent-purple) 100%);
-    color: white;
+    background: linear-gradient(135deg, #D4AF37 0%, #B8960F 100%);
+    color: #050505;
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 700;
     margin-right: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 /* ===== Model name badge ===== */
 .model-badge {
     display: inline-block;
-    background: var(--accent-purple-dim);
-    color: var(--accent-purple);
+    background: var(--accent-gold-dim);
+    color: var(--accent-gold);
     padding: 0.25rem 0.75rem;
     border-radius: 6px;
     font-size: 0.875rem;
     font-weight: 600;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* ===== Premium Border Glow Effect ===== */
+.premium-border {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.premium-border::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), transparent, rgba(212, 175, 55, 0.1));
+    pointer-events: none;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -396,7 +458,7 @@ api_status = check_api_keys()
 
 # --- Sidebar ---
 with st.sidebar:
-    st.markdown("## 🔑 API Keys")
+    st.markdown("## ✦ API Keys")
     for provider, is_set in api_status.items():
         if is_set:
             st.markdown(f'<div class="api-badge connected">✓ {provider.upper()}</div>', unsafe_allow_html=True)
@@ -404,7 +466,7 @@ with st.sidebar:
             st.markdown(f'<div class="api-badge disconnected">✗ {provider.upper()}</div>', unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("## 🤝 Collaborators")
+    st.markdown("## ✦ Collaborators")
 
     selected_openai = st.multiselect(
         "OpenAI",
@@ -430,7 +492,7 @@ with st.sidebar:
     selected_models = selected_openai + selected_anthropic + selected_google
 
     st.markdown("---")
-    st.markdown("## 🎯 Facilitator")
+    st.markdown("## ✦ Facilitator")
 
     available_facilitators = []
     for m, (provider, _) in ALL_MODELS.items():
@@ -444,7 +506,7 @@ with st.sidebar:
         facilitator = None
 
     st.markdown("---")
-    st.markdown("## ⚙️ Settings")
+    st.markdown("## ✦ Settings")
     rounds = st.slider("Number of Rounds", 1, 10, 2)
 
 
@@ -577,12 +639,21 @@ if "full_report" not in st.session_state:
 
 
 # --- Main Layout ---
-st.title("💡 AI Idea Lab Pro")
+# Display Logo
+logo_base64 = get_logo_base64()
+if logo_base64:
+    st.markdown(f'''
+    <div class="logo-container">
+        <img src="data:image/png;base64,{logo_base64}" alt="XEXON Logo">
+    </div>
+    ''', unsafe_allow_html=True)
+else:
+    st.title("✦ XEXON AI Idea Lab")
 
 col_input, col_canvas = st.columns([1, 1], gap="large")
 
 with col_input:
-    st.markdown("### 💭 Enter Your Topic")
+    st.markdown("### ✦ Enter Your Topic")
     topic = st.text_area(
         "Topic",
         "Innovative approaches to solve rural depopulation",
@@ -599,7 +670,7 @@ with col_input:
         st.warning("⚠️ Please select a facilitator")
         can_start = False
 
-    start_button = st.button("🚀 Start Session", disabled=not can_start, type="primary", use_container_width=True)
+    start_button = st.button("✦ Start Session", disabled=not can_start, type="primary", use_container_width=True)
 
 # --- Run Session ---
 if start_button:
@@ -632,12 +703,12 @@ if start_button:
                 history_log.append(f"[{model}]: {msg}")
                 time.sleep(0.5)
 
-        st.success("🎉 Discussion complete! Generating summary...")
+        st.success("✦ Discussion complete! Generating summary...")
 
     # Update Canvas with results
     full_log = "\n\n".join(history_log)
 
-    with st.spinner(f"🎯 {facilitator} is creating the summary..."):
+    with st.spinner(f"✦ {facilitator} is creating the summary..."):
         conclusion = facilitate(facilitator, clients, topic, full_log, selected_models)
 
     # Save to session state
@@ -650,19 +721,19 @@ if start_button:
 # --- Canvas Display ---
 with col_canvas:
     if st.session_state.conclusion:
-        st.markdown("### 🎯 Idea Synthesis Report")
+        st.markdown("### ✦ Idea Synthesis Report")
         with st.chat_message("assistant", avatar=get_avatar(st.session_state.facilitator_name)):
             st.markdown(f'<span class="model-badge">{st.session_state.facilitator_name}</span>', unsafe_allow_html=True)
             st.markdown(st.session_state.conclusion)
 
         st.download_button(
-            "📥 Download Report",
+            "✦ Download Report",
             st.session_state.full_report,
-            "idea_lab_report.txt",
+            "xexon_idea_report.txt",
             use_container_width=True
         )
 
-        if st.button("🔄 Reset", use_container_width=True):
+        if st.button("✦ Reset", use_container_width=True):
             st.session_state.conclusion = None
             st.session_state.facilitator_name = None
             st.session_state.full_report = None
@@ -670,7 +741,7 @@ with col_canvas:
     else:
         st.markdown("""
         <div class="canvas-card">
-            <h2>🎯 Idea Synthesis Report</h2>
+            <h2>✦ Idea Synthesis Report</h2>
             <p>Start a session to see the AI-generated summary here</p>
         </div>
         """, unsafe_allow_html=True)
