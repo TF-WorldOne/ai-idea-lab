@@ -1,4 +1,4 @@
-"""
+﻿"""
 X-Think AI Idea Lab - Premium Edition
 Three-column layout with no sidebar
 """
@@ -38,9 +38,7 @@ from config import (
     # Dynamic expertise
     EXPERTISE_EXTRACTION_PROMPT, DYNAMIC_EXPERTISE_PROMPT_TEMPLATE,
     # File upload
-    FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT,
-    # Facilitator
-    FACILITATOR_MODEL_FEATURES
+    FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT
 )
 
 # --- Page Configuration ---
@@ -70,7 +68,7 @@ def show_star_celebration():
         delay = random.uniform(0, 2)
         duration = random.uniform(2, 4)
         size = random.randint(16, 32)
-        stars_html += f'<span class="star" style="left: {left}%; animation-delay: {delay}s; animation-duration: {duration}s; font-size: {size}px;">✦</span>'
+        stars_html += f'<span class="star" style="left: {left}%; animation-delay: {delay}s; animation-duration: {duration}s; font-size: {size}px;">笨ｦ</span>'
     stars_html += '</div>'
     st.markdown(stars_html, unsafe_allow_html=True)
 
@@ -745,7 +743,7 @@ def fetch_url_content(url: str) -> dict:
         # Truncate if too long
         max_length = URL_READING_CONFIG.get("max_content_length", 8000)
         if len(content) > max_length:
-            content = content[:max_length] + "\n\n[... 記事の続きは省略されました ...]"
+            content = content[:max_length] + "\n\n[... 險倅ｺ九・邯壹″縺ｯ逵∫払縺輔ｌ縺ｾ縺励◆ ...]"
         
         return {
             "success": True,
@@ -756,29 +754,27 @@ def fetch_url_content(url: str) -> dict:
         }
         
     except requests.Timeout:
-        return {"success": False, "title": "", "content": "", "error": "タイムアウト：サーバーからの応答がありません"}
+        return {"success": False, "title": "", "content": "", "error": "繧ｿ繧､繝繧｢繧ｦ繝茨ｼ壹し繝ｼ繝舌・縺九ｉ縺ｮ蠢懃ｭ斐′縺ゅｊ縺ｾ縺帙ｓ"}
     except requests.RequestException as e:
-        return {"success": False, "title": "", "content": "", "error": f"取得エラー: {str(e)}"}
+        return {"success": False, "title": "", "content": "", "error": f"蜿門ｾ励お繝ｩ繝ｼ: {str(e)}"}
     except Exception as e:
-        return {"success": False, "title": "", "content": "", "error": f"解析エラー: {str(e)}"}
+        return {"success": False, "title": "", "content": "", "error": f"隗｣譫舌お繝ｩ繝ｼ: {str(e)}"}
 
 
 # --- Dynamic Expertise Extraction ---
 def extract_dynamic_expertise(content: str, clients: dict) -> str:
     """
-    トピックまたは記事内容から動的に専門性コンテキストを生成
-    軽量モデルを使用してコスト節約
-    """
+    繝医ヴ繝・け縺ｾ縺溘・險倅ｺ句・螳ｹ縺九ｉ蜍慕噪縺ｫ蟆る摩諤ｧ繧ｳ繝ｳ繝・く繧ｹ繝医ｒ逕滓・
+    霆ｽ驥上Δ繝・Ν繧剃ｽｿ逕ｨ縺励※繧ｳ繧ｹ繝育ｯ邏・    """
     if not content or len(content.strip()) < 10:
         return ""
     
-    # 入力を適切な長さに制限
-    truncated_content = content[:3000]
+    # 蜈･蜉帙ｒ驕ｩ蛻・↑髟ｷ縺輔↓蛻ｶ髯・    truncated_content = content[:3000]
     
     extraction_prompt = EXPERTISE_EXTRACTION_PROMPT.format(content=truncated_content)
     
     try:
-        # 軽量・高速モデルを優先使用
+        # 霆ｽ驥上・鬮倬溘Δ繝・Ν繧貞━蜈井ｽｿ逕ｨ
         if clients.get("google"):
             model = genai.GenerativeModel("gemini-2.0-flash-exp")
             response = model.generate_content(extraction_prompt)
@@ -852,10 +848,10 @@ def extract_pdf_text(file_bytes: bytes) -> dict:
                 "pages": len(pdf_reader.pages)
             }
         else:
-            return {"success": False, "content": "", "error": "PDF処理ライブラリがインストールされていません", "pages": 0}
+            return {"success": False, "content": "", "error": "PDF蜃ｦ逅・Λ繧､繝悶Λ繝ｪ縺後う繝ｳ繧ｹ繝医・繝ｫ縺輔ｌ縺ｦ縺・∪縺帙ｓ", "pages": 0}
             
     except Exception as e:
-        return {"success": False, "content": "", "error": f"PDF抽出エラー: {str(e)}", "pages": 0}
+        return {"success": False, "content": "", "error": f"PDF謚ｽ蜃ｺ繧ｨ繝ｩ繝ｼ: {str(e)}", "pages": 0}
 
 
 def analyze_csv_excel(file_bytes: bytes, filename: str) -> dict:
@@ -872,34 +868,32 @@ def analyze_csv_excel(file_bytes: bytes, filename: str) -> dict:
         elif file_ext in ["xlsx", "xls"]:
             df = pd.read_excel(io.BytesIO(file_bytes))
         else:
-            return {"success": False, "content": "", "error": "非対応のファイル形式"}
+            return {"success": False, "content": "", "error": "髱槫ｯｾ蠢懊・繝輔ぃ繧､繝ｫ蠖｢蠑・}
         
         # Generate summary
         summary = f"""
-# データファイル分析サマリー
+# 繝・・繧ｿ繝輔ぃ繧､繝ｫ蛻・梵繧ｵ繝槭Μ繝ｼ
 
-## 基本情報
-- ファイル名: {filename}
-- 行数: {len(df)}
-- 列数: {len(df.columns)}
+## 蝓ｺ譛ｬ諠・ｱ
+- 繝輔ぃ繧､繝ｫ蜷・ {filename}
+- 陦梧焚: {len(df)}
+- 蛻玲焚: {len(df.columns)}
 
-## カラム一覧
+## 繧ｫ繝ｩ繝荳隕ｧ
 {', '.join(df.columns.tolist())}
 
-## データプレビュー（先頭5行）
-{df.head().to_string()}
+## 繝・・繧ｿ繝励Ξ繝薙Η繝ｼ・亥・鬆ｭ5陦鯉ｼ・{df.head().to_string()}
 
-## 統計サマリー
+## 邨ｱ險医し繝槭Μ繝ｼ
 {df.describe().to_string()}
 
-## データ型
-{df.dtypes.to_string()}
+## 繝・・繧ｿ蝙・{df.dtypes.to_string()}
 """
         
         return {"success": True, "content": summary, "error": ""}
         
     except Exception as e:
-        return {"success": False, "content": "", "error": f"データ分析エラー: {str(e)}"}
+        return {"success": False, "content": "", "error": f"繝・・繧ｿ蛻・梵繧ｨ繝ｩ繝ｼ: {str(e)}"}
 
 
 def analyze_image_with_vision(image_bytes: bytes, clients: dict) -> dict:
@@ -969,10 +963,10 @@ def analyze_image_with_vision(image_bytes: bytes, clients: dict) -> dict:
             return {"success": True, "content": response.content[0].text, "error": ""}
         
         else:
-            return {"success": False, "content": "", "error": "Vision APIが利用できません（OpenAI/Google/Anthropic APIキーが必要）"}
+            return {"success": False, "content": "", "error": "Vision API縺悟茜逕ｨ縺ｧ縺阪∪縺帙ｓ・・penAI/Google/Anthropic API繧ｭ繝ｼ縺悟ｿ・ｦ・ｼ・}
             
     except Exception as e:
-        return {"success": False, "content": "", "error": f"画像分析エラー: {str(e)}"}
+        return {"success": False, "content": "", "error": f"逕ｻ蜒丞・譫舌お繝ｩ繝ｼ: {str(e)}"}
 
 
 def process_uploaded_file(uploaded_file, clients: dict) -> dict:
@@ -991,7 +985,7 @@ def process_uploaded_file(uploaded_file, clients: dict) -> dict:
         return {
             "success": False,
             "content": "",
-            "error": f"ファイルサイズが大きすぎます（{file_size_mb:.1f}MB > {max_size}MB）",
+            "error": f"繝輔ぃ繧､繝ｫ繧ｵ繧､繧ｺ縺悟､ｧ縺阪☆縺弱∪縺呻ｼ・file_size_mb:.1f}MB > {max_size}MB・・,
             "file_info": {}
         }
     
@@ -1001,7 +995,7 @@ def process_uploaded_file(uploaded_file, clients: dict) -> dict:
         return {
             "success": False,
             "content": "",
-            "error": f"非対応のファイル形式: .{file_ext}",
+            "error": f"髱槫ｯｾ蠢懊・繝輔ぃ繧､繝ｫ蠖｢蠑・ .{file_ext}",
             "file_info": {}
         }
     
@@ -1041,14 +1035,14 @@ def process_uploaded_file(uploaded_file, clients: dict) -> dict:
             return {
                 "success": False,
                 "content": "",
-                "error": f"テキスト読み込みエラー: {str(e)}",
+                "error": f"繝・く繧ｹ繝郁ｪｭ縺ｿ霎ｼ縺ｿ繧ｨ繝ｩ繝ｼ: {str(e)}",
                 "file_info": file_info
             }
     
     return {
         "success": False,
         "content": "",
-        "error": "未対応のファイル形式",
+        "error": "譛ｪ蟇ｾ蠢懊・繝輔ぃ繧､繝ｫ蠖｢蠑・,
         "file_info": file_info
     }
 
@@ -1097,7 +1091,7 @@ Focus your discussion on the file content while addressing the user's question.
     try:
         if provider == "openai":
             if not clients["openai"]:
-                return "❌ OpenAI API key not configured"
+                return "笶・OpenAI API key not configured"
             params = {
                 "model": model_id,
                 "messages": [
@@ -1112,7 +1106,7 @@ Focus your discussion on the file content while addressing the user's question.
 
         elif provider == "anthropic":
             if not clients["anthropic"]:
-                return "❌ Anthropic API key not configured"
+                return "笶・Anthropic API key not configured"
             response = clients["anthropic"].messages.create(
                 model=model_id,
                 max_tokens=1500,
@@ -1124,14 +1118,14 @@ Focus your discussion on the file content while addressing the user's question.
 
         elif provider == "google":
             if not clients["google"]:
-                return "❌ Google API key not configured"
+                return "笶・Google API key not configured"
             model = genai.GenerativeModel(model_id, generation_config={"temperature": temperature})
             full_prompt = f"{system_prompt}\n\n{prompt}"
             response = model.generate_content(full_prompt)
             return response.text
 
     except Exception as e:
-        return f"❌ Error ({model_name}): {e}"
+        return f"笶・Error ({model_name}): {e}"
 
 
 # --- Facilitator Function ---
@@ -1155,7 +1149,7 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
     try:
         if provider == "openai":
             if not clients["openai"]:
-                return "❌ OpenAI API key not configured"
+                return "笶・OpenAI API key not configured"
             params = {
                 "model": model_id,
                 "messages": [
@@ -1170,7 +1164,7 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
 
         elif provider == "anthropic":
             if not clients["anthropic"]:
-                return "❌ Anthropic API key not configured"
+                return "笶・Anthropic API key not configured"
             response = clients["anthropic"].messages.create(
                 model=model_id,
                 max_tokens=4000,  # Increased for longer syntheses
@@ -1182,13 +1176,13 @@ def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, 
 
         elif provider == "google":
             if not clients["google"]:
-                return "❌ Google API key not configured"
+                return "笶・Google API key not configured"
             model = genai.GenerativeModel(model_id)
             response = model.generate_content(full_prompt)
             return response.text
 
     except Exception as e:
-        return f"❌ Facilitator Error ({facilitator_name}): {e}"
+        return f"笶・Facilitator Error ({facilitator_name}): {e}"
 
 
 # --- Session State ---
@@ -1236,25 +1230,25 @@ if logo_base64:
     </div>
     ''', unsafe_allow_html=True)
 else:
-    st.title("✦ X-Think AI Idea Lab")
+    st.title("笨ｦ X-Think AI Idea Lab")
 
 # Three-column layout
 col_config, col_main, col_synthesis = st.columns([3, 4, 3], gap="medium")
 
 # --- LEFT COLUMN: Configuration ---
 with col_config:
-    st.markdown("### ✦ Configuration")
+    st.markdown("### 笨ｦ Configuration")
     
     # API Status
-    with st.expander("✦ API Keys", expanded=False):
+    with st.expander("笨ｦ API Keys", expanded=False):
         for provider, is_set in api_status.items():
             if is_set:
-                st.markdown(f'<div class="api-badge connected">✓ {provider.upper()}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="api-badge connected">笨・{provider.upper()}</div>', unsafe_allow_html=True)
             else:
-                st.markdown(f'<div class="api-badge disconnected">✗ {provider.upper()}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="api-badge disconnected">笨・{provider.upper()}</div>', unsafe_allow_html=True)
 
     # Model Selection
-    with st.expander("✦ AI Collaborators", expanded=True):
+    with st.expander("笨ｦ AI Collaborators", expanded=True):
         st.markdown('<p class="section-header">OpenAI</p>', unsafe_allow_html=True)
         selected_openai = st.multiselect(
             "OpenAI Models",
@@ -1285,25 +1279,20 @@ with col_config:
     selected_models = selected_openai + selected_anthropic + selected_google
 
     # Facilitator Selection
-    with st.expander("✦ Facilitator", expanded=True):
+    with st.expander("笨ｦ Facilitator", expanded=True):
         available_facilitators = []
         for m, (provider, _) in ALL_MODELS.items():
             if m not in selected_models and api_status.get(provider, False):
                 available_facilitators.append(m)
 
         if available_facilitators:
-            facilitator = st.selectbox(
-                "Summary Host", 
-                available_facilitators, 
-                label_visibility="collapsed",
-                format_func=lambda x: f"{x} {FACILITATOR_MODEL_FEATURES.get(x, '')}"
-            )
+            facilitator = st.selectbox("Summary Host", available_facilitators, label_visibility="collapsed")
         else:
-            st.warning("⚠️ Please keep at least one model available")
+            st.warning("笞・・Please keep at least one model available")
             facilitator = None
 
     # Settings
-    with st.expander("✦ Settings", expanded=True):
+    with st.expander("笨ｦ Settings", expanded=True):
         rounds = st.slider("Number of Rounds", 1, 10, 2)
         creativity = st.slider("Creativity", 0.0, 1.0, 0.7, 0.1, help="Higher = more adventurous, Lower = more stable")
         expertise_level = st.select_slider(
@@ -1314,9 +1303,9 @@ with col_config:
         )
         
         # Personality settings
-        st.markdown('<p class="section-header">AI個性設定</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-header">AI蛟区ｧ險ｭ螳・/p>', unsafe_allow_html=True)
         personality_mode = st.radio(
-            "個性割り当てモード",
+            "蛟区ｧ蜑ｲ繧雁ｽ薙※繝｢繝ｼ繝・,
             options=list(PERSONALITY_MODES.keys()),
             format_func=lambda x: PERSONALITY_MODES[x],
             horizontal=True,
@@ -1325,7 +1314,7 @@ with col_config:
         st.session_state.personality_mode = personality_mode
         
         # Show personality legend
-        with st.expander("✦ 個性の説明", expanded=False):
+        with st.expander("笨ｦ 蛟区ｧ縺ｮ隱ｬ譏・, expanded=False):
             for pid, pinfo in AI_PERSONALITIES.items():
                 st.markdown(
                     f'{pinfo["emoji"]} **{pinfo["name_ja"]}** ({pinfo["name_en"]}): {pinfo["description_ja"]}'
@@ -1333,7 +1322,7 @@ with col_config:
         
         # Manual personality assignment
         if personality_mode == "manual" and selected_models:
-            st.markdown('<p class="section-header">モデル別個性</p>', unsafe_allow_html=True)
+            st.markdown('<p class="section-header">繝｢繝・Ν蛻･蛟区ｧ</p>', unsafe_allow_html=True)
             personality_options = [(pid, f'{pinfo["emoji"]} {pinfo["name_ja"]}') 
                                    for pid, pinfo in AI_PERSONALITIES.items()]
             
@@ -1348,13 +1337,13 @@ with col_config:
 
 # --- MIDDLE COLUMN: Main Interaction ---
 with col_main:
-    st.markdown("### ✦ Topic & Discussion")
+    st.markdown("### 笨ｦ Topic & Discussion")
     
     # File uploader
     uploaded_file = st.file_uploader(
-        "📎 ファイルをアップロード（オプション）",
+        "梼 繝輔ぃ繧､繝ｫ繧偵い繝・・繝ｭ繝ｼ繝会ｼ医が繝励す繝ｧ繝ｳ・・,
         type=list(FILE_UPLOAD_CONFIG["allowed_extensions"].keys()),
-        help="PDF、CSV、Excel、画像などをアップロードして内容を議論できます"
+        help="PDF縲，SV縲・xcel縲∫判蜒上↑縺ｩ繧偵い繝・・繝ｭ繝ｼ繝峨＠縺ｦ蜀・ｮｹ繧定ｭｰ隲悶〒縺阪∪縺・
     )
     
     # Process uploaded file
@@ -1362,7 +1351,7 @@ with col_main:
         if st.session_state.uploaded_file_content is None or \
            st.session_state.get("last_uploaded_file") != uploaded_file.name:
             
-            with st.spinner(f"📄 {uploaded_file.name} を処理中..."):
+            with st.spinner(f"塘 {uploaded_file.name} 繧貞・逅・ｸｭ..."):
                 clients = init_clients()
                 file_result = process_uploaded_file(uploaded_file, clients)
                 
@@ -1371,17 +1360,17 @@ with col_main:
                     st.session_state.last_uploaded_file = uploaded_file.name
                     
                     file_info = file_result["file_info"]
-                    st.success(f"✅ ファイルを読み込みました: {file_info['icon']} {file_info['name']} ({file_info['size_mb']:.1f}MB)")
+                    st.success(f"笨・繝輔ぃ繧､繝ｫ繧定ｪｭ縺ｿ霎ｼ縺ｿ縺ｾ縺励◆: {file_info['icon']} {file_info['name']} ({file_info['size_mb']:.1f}MB)")
                     
                     # Preview
-                    with st.expander("📄 ファイル内容（プレビュー）", expanded=False):
+                    with st.expander("塘 繝輔ぃ繧､繝ｫ蜀・ｮｹ・医・繝ｬ繝薙Η繝ｼ・・, expanded=False):
                         if file_info["extension"] in ["png", "jpg", "jpeg"]:
                             uploaded_file.seek(0)
                             st.image(uploaded_file, caption=file_info["name"])
-                            st.markdown("**AI分析結果:**")
+                            st.markdown("**AI蛻・梵邨先棡:**")
                         st.text(file_result["content"][:1500] + "...")
                 else:
-                    st.error(f"❌ {file_result['error']}")
+                    st.error(f"笶・{file_result['error']}")
                     st.session_state.uploaded_file_content = None
     
     with st.form(key="session_form"):
@@ -1390,21 +1379,21 @@ with col_main:
             "",
             height=100,
             label_visibility="collapsed",
-            placeholder="トピックを入力してください...\n💡 URLを貼り付けると記事内容を自動取得して議論します"
+            placeholder="繝医ヴ繝・け繧貞・蜉帙＠縺ｦ縺上□縺輔＞...\n庁 URL繧定ｲｼ繧贋ｻ倥￠繧九→險倅ｺ句・螳ｹ繧定・蜍募叙蠕励＠縺ｦ隴ｰ隲悶＠縺ｾ縺・
         )
-        start_button = st.form_submit_button("✦ Start Session", type="primary", use_container_width=True)
+        start_button = st.form_submit_button("笨ｦ Start Session", type="primary", use_container_width=True)
 
     # Validation (show warnings outside form)
     can_start = True
     if start_button:
         if not topic.strip():
-            st.warning("⚠️ Please enter a topic")
+            st.warning("笞・・Please enter a topic")
             can_start = False
         if len(selected_models) < 2:
-            st.warning("⚠️ Please select at least 2 AI collaborators")
+            st.warning("笞・・Please select at least 2 AI collaborators")
             can_start = False
         if not facilitator:
-            st.warning("⚠️ Please select a facilitator")
+            st.warning("笞・・Please select a facilitator")
             can_start = False
 
     # Chat history display area
@@ -1412,7 +1401,7 @@ with col_main:
 
 # --- RIGHT COLUMN: Synthesis Canvas ---
 with col_synthesis:
-    st.markdown("### ✦ Synthesis")
+    st.markdown("### 笨ｦ Synthesis")
     synthesis_container = st.container()
 
 # --- Display Previous Discussion (if exists) ---
@@ -1482,22 +1471,22 @@ if start_button and can_start:
     url_content_data = None
     
     if detected_url:
-        with st.spinner(f"🌐 記事を読み込み中... {detected_url[:50]}..."):
+        with st.spinner(f"倹 險倅ｺ九ｒ隱ｭ縺ｿ霎ｼ縺ｿ荳ｭ... {detected_url[:50]}..."):
             url_content_data = fetch_url_content(detected_url)
             
             if url_content_data["success"]:
-                st.success(f"✅ 記事を取得しました: {url_content_data['title'][:50]}...")
+                st.success(f"笨・險倅ｺ九ｒ蜿門ｾ励＠縺ｾ縺励◆: {url_content_data['title'][:50]}...")
                 st.session_state.url_content = url_content_data
                 st.session_state.detected_url = detected_url
                 
                 # Show article preview
-                with st.expander("📄 取得した記事内容（プレビュー）", expanded=False):
-                    st.markdown(f"**タイトル:** {url_content_data['title']}")
+                with st.expander("塘 蜿門ｾ励＠縺溯ｨ倅ｺ句・螳ｹ・医・繝ｬ繝薙Η繝ｼ・・, expanded=False):
+                    st.markdown(f"**繧ｿ繧､繝医Ν:** {url_content_data['title']}")
                     st.markdown(f"**URL:** {detected_url}")
                     st.text(url_content_data['content'][:1000] + "...")
             else:
-                st.warning(f"⚠️ 記事の取得に失敗: {url_content_data['error']}")
-                st.info("💡 URLなしのテキストとして議論を続けます")
+                st.warning(f"笞・・險倅ｺ九・蜿門ｾ励↓螟ｱ謨・ {url_content_data['error']}")
+                st.info("庁 URL縺ｪ縺励・繝・く繧ｹ繝医→縺励※隴ｰ隲悶ｒ邯壹￠縺ｾ縺・)
     
     clients = init_clients()
     
@@ -1519,12 +1508,12 @@ if start_button and can_start:
         content_to_analyze = topic
         content_source = "topic"
     
-    with st.spinner("🎓 議論に必要な専門性を分析中..."):
+    with st.spinner("雌 隴ｰ隲悶↓蠢・ｦ√↑蟆る摩諤ｧ繧貞・譫蝉ｸｭ..."):
         dynamic_expertise = extract_dynamic_expertise(content_to_analyze, clients)
         st.session_state.dynamic_expertise = dynamic_expertise
         
         if dynamic_expertise:
-            with st.expander("🎓 自動検出された専門性", expanded=False):
+            with st.expander("雌 閾ｪ蜍墓､懷・縺輔ｌ縺溷ｰる摩諤ｧ", expanded=False):
                 st.markdown(dynamic_expertise)
     
     history_log = []
@@ -1537,15 +1526,15 @@ if start_button and can_start:
         # Show content source
         if st.session_state.uploaded_file_content:
             file_info = st.session_state.uploaded_file_content["file_info"]
-            st.markdown(f"**📎 File:** {file_info['icon']} {file_info['name']}")
+            st.markdown(f"**梼 File:** {file_info['icon']} {file_info['name']}")
         elif detected_url and url_content_data and url_content_data.get("success"):
-            st.markdown(f"**📰 Article:** {url_content_data['title'][:60]}...")
+            st.markdown(f"**堂 Article:** {url_content_data['title'][:60]}...")
         
         st.markdown(f"**Participants:** {', '.join(selected_models)}")
         st.markdown(f"**Facilitator:** {facilitator}")
         
         if st.session_state.dynamic_expertise:
-            st.markdown(f"**🎓 Expertise:** {st.session_state.dynamic_expertise[:100]}...")
+            st.markdown(f"**雌 Expertise:** {st.session_state.dynamic_expertise[:100]}...")
         
         st.markdown("---")
 
@@ -1605,9 +1594,9 @@ if start_button and can_start:
                                                  dynamic_expertise=st.session_state.dynamic_expertise)
                                 
                                 # Check if the response is an error message
-                                if msg and msg.startswith("❌"):
+                                if msg and msg.startswith("笶・):
                                     if retry_count < max_retries:
-                                        st.warning(f"⚠️ Retry {retry_count + 1}/{max_retries} for {model}...")
+                                        st.warning(f"笞・・Retry {retry_count + 1}/{max_retries} for {model}...")
                                         time.sleep(2)
                                         retry_count += 1
                                         msg = None
@@ -1617,11 +1606,11 @@ if start_button and can_start:
                                     break
                             except Exception as e:
                                 if retry_count < max_retries:
-                                    st.warning(f"⚠️ Error occurred, retrying... ({retry_count + 1}/{max_retries})")
+                                    st.warning(f"笞・・Error occurred, retrying... ({retry_count + 1}/{max_retries})")
                                     time.sleep(2)
                                     retry_count += 1
                                 else:
-                                    msg = f"❌ Error after {max_retries} retries: {str(e)}"
+                                    msg = f"笶・Error after {max_retries} retries: {str(e)}"
                                     st.error(msg)
                                     break
 
@@ -1637,19 +1626,19 @@ if start_button and can_start:
                                 "personality_info": personality_info
                             })
                         else:
-                            error_msg = f"❌ {model} failed to respond"
+                            error_msg = f"笶・{model} failed to respond"
                             st.error(error_msg)
                             history_log.append(f"[{model}]: {error_msg}")
 
                     time.sleep(0.5)
 
             progress_bar.progress(1.0)
-            status_text.text("✅ Discussion complete!")
-            st.success("✦ Discussion complete! Generating summary...")
+            status_text.text("笨・Discussion complete!")
+            st.success("笨ｦ Discussion complete! Generating summary...")
             
         except Exception as e:
-            st.error(f"❌ Session error: {str(e)}")
-            st.warning("⚠️ Partial results may be available. Attempting to generate summary...")
+            st.error(f"笶・Session error: {str(e)}")
+            st.warning("笞・・Partial results may be available. Attempting to generate summary...")
 
 
     # Update Canvas with results
@@ -1660,9 +1649,9 @@ if start_button and can_start:
         synthesis_progress = st.empty()
         synthesis_progress.markdown(f"""
         <div class="canvas-card">
-            <h2 class="report-title">✦ Idea Synthesis Report</h2>
+            <h2 class="report-title">笨ｦ Idea Synthesis Report</h2>
             <div class="generating-spinner"></div>
-            <p style="text-align: center; margin-top: 1rem;">🤖 {facilitator} is analyzing the discussion...</p>
+            <p style="text-align: center; margin-top: 1rem;">､・{facilitator} is analyzing the discussion...</p>
             <p style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">This may take 30-60 seconds for long discussions</p>
             <p style="text-align: center; color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.5rem;">Log length: {len(full_log)} chars</p>
         </div>
@@ -1677,7 +1666,7 @@ if start_button and can_start:
         elapsed = time.time() - start_time
         
         # Check if conclusion is actually an error message
-        if conclusion and conclusion.startswith("❌"):
+        if conclusion and conclusion.startswith("笶・):
             raise Exception(f"Facilitator returned error: {conclusion}")
             
     except Exception as e:
@@ -1685,7 +1674,7 @@ if start_button and can_start:
         error_msg = str(e)
         
         # Provide detailed error information
-        conclusion = f"""❌ **Synthesis Error** (after {elapsed:.1f}s)
+        conclusion = f"""笶・**Synthesis Error** (after {elapsed:.1f}s)
 
 **Error:** {error_msg}
 
@@ -1701,10 +1690,10 @@ The discussion log is preserved above. You can manually review the {len(history_
         with synthesis_container:
             synthesis_progress.empty()
             st.error(f"Failed to generate synthesis after {elapsed:.1f}s: {error_msg}")
-            st.info("💡 Tip: Try GPT-4o or Claude Sonnet 4 as facilitator for better reliability")
+            st.info("庁 Tip: Try GPT-4o or Claude Sonnet 4 as facilitator for better reliability")
 
     # Clear the progress indicator
-    if conclusion and not conclusion.startswith("❌"):
+    if conclusion and not conclusion.startswith("笶・):
         synthesis_progress.empty()
 
     # Save to session state
@@ -1719,19 +1708,19 @@ The discussion log is preserved above. You can manually review the {len(history_
 # --- Synthesis Display ---
 with synthesis_container:
     if st.session_state.conclusion:
-        st.markdown('<h3 class="report-title">✦ Idea Synthesis Report</h3>', unsafe_allow_html=True)
+        st.markdown('<h3 class="report-title">笨ｦ Idea Synthesis Report</h3>', unsafe_allow_html=True)
         with st.chat_message("assistant", avatar=get_avatar(st.session_state.facilitator_name)):
             st.markdown(f'<span class="model-badge">{st.session_state.facilitator_name}</span>', unsafe_allow_html=True)
             st.markdown(st.session_state.conclusion)
 
         st.download_button(
-            "✦ Download Report",
+            "笨ｦ Download Report",
             st.session_state.full_report,
             "xthink_idea_report.txt",
             use_container_width=True
         )
 
-        if st.button("✦ Reset", use_container_width=True):
+        if st.button("笨ｦ Reset", use_container_width=True):
             st.session_state.conclusion = None
             st.session_state.facilitator_name = None
             st.session_state.full_report = None
@@ -1739,7 +1728,7 @@ with synthesis_container:
     elif st.session_state.generating:
         st.markdown("""
         <div class="canvas-card">
-            <h2 class="report-title">✦ Idea Synthesis Report</h2>
+            <h2 class="report-title">笨ｦ Idea Synthesis Report</h2>
             <div class="generating-spinner"></div>
             <p>Synthesizing discussion...</p>
         </div>
@@ -1747,7 +1736,7 @@ with synthesis_container:
     else:
         st.markdown("""
         <div class="canvas-card">
-            <h2 class="report-title">✦ Idea Synthesis Report</h2>
+            <h2 class="report-title">笨ｦ Idea Synthesis Report</h2>
             <p>Start a session to see the AI-generated summary here</p>
         </div>
         """, unsafe_allow_html=True)
