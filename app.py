@@ -148,25 +148,32 @@ section[data-testid="stSidebar"] h2 {
     padding-bottom: 0.5rem;
 }
 
-/* Custom sidebar toggle button */
-.sidebar-toggle-btn {
+/* Force Streamlit sidebar toggle button to be visible */
+[data-testid="collapsedControl"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     position: fixed !important;
-    left: 12px !important;
-    top: 12px !important;
-    z-index: 999999 !important;
-    background: var(--bg-sidebar) !important;
-    border: 1px solid var(--accent-gold) !important;
-    border-radius: 6px !important;
-    padding: 8px 12px !important;
-    color: var(--accent-gold) !important;
-    cursor: pointer !important;
-    font-size: 18px !important;
-    transition: all 0.2s ease !important;
+    left: 0.5rem !important;
+    top: 0.75rem !important;
+    z-index: 1000000 !important;
 }
 
-.sidebar-toggle-btn:hover {
-    background: var(--accent-gold) !important;
-    color: var(--bg-main) !important;
+[data-testid="collapsedControl"] button,
+[data-testid="collapsedControl"] svg {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: var(--accent-gold) !important;
+    fill: var(--accent-gold) !important;
+}
+
+/* Also target by class patterns Streamlit uses */
+div[class*="collapsedControl"],
+button[class*="collapse"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* ===== Cards & Containers ===== */
@@ -552,43 +559,6 @@ header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Custom Sidebar Toggle Button (JavaScript) ---
-st.markdown("""
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Create toggle button if it doesn't exist
-    if (!document.querySelector('.sidebar-toggle-btn')) {
-        const btn = document.createElement('button');
-        btn.className = 'sidebar-toggle-btn';
-        btn.innerHTML = '☰';
-        btn.onclick = function() {
-            // Find and click the native Streamlit sidebar button
-            const nativeBtn = document.querySelector('button[data-testid="stSidebarCollapseButton"]') ||
-                              document.querySelector('[data-testid="collapsedControl"] button') ||
-                              document.querySelector('button[kind="headerNoPadding"]');
-            if (nativeBtn) nativeBtn.click();
-        };
-        document.body.appendChild(btn);
-    }
-});
-
-// Re-run on Streamlit rerun
-setTimeout(function() {
-    if (!document.querySelector('.sidebar-toggle-btn')) {
-        const btn = document.createElement('button');
-        btn.className = 'sidebar-toggle-btn';
-        btn.innerHTML = '☰';
-        btn.onclick = function() {
-            const nativeBtn = document.querySelector('button[data-testid="stSidebarCollapseButton"]') ||
-                              document.querySelector('[data-testid="collapsedControl"] button') ||
-                              document.querySelector('button[kind="headerNoPadding"]');
-            if (nativeBtn) nativeBtn.click();
-        };
-        document.body.appendChild(btn);
-    }
-}, 1000);
-</script>
-""", unsafe_allow_html=True)
 
 # --- API Status ---
 api_status = check_api_keys()
