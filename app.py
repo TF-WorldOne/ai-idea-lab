@@ -128,10 +128,12 @@ p, span, label, div {
     width: auto;
 }
 
-/* ===== Sidebar ===== */
+/* ===== Sidebar - Always Visible (No Collapse) ===== */
 section[data-testid="stSidebar"] {
     background: var(--bg-sidebar) !important;
     border-right: 1px solid var(--border) !important;
+    min-width: 21rem !important;
+    max-width: 21rem !important;
 }
 
 section[data-testid="stSidebar"] > div {
@@ -148,32 +150,24 @@ section[data-testid="stSidebar"] h2 {
     padding-bottom: 0.5rem;
 }
 
-/* Force Streamlit sidebar toggle button to be visible */
-[data-testid="collapsedControl"] {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: fixed !important;
-    left: 0.5rem !important;
-    top: 0.75rem !important;
-    z-index: 1000000 !important;
+/* Hide all collapse/toggle buttons completely */
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapse"],
+button[kind="header"],
+button[aria-label*="Close"],
+button[aria-label*="collapse"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
-[data-testid="collapsedControl"] button,
-[data-testid="collapsedControl"] svg {
+/* Prevent sidebar from being collapsible */
+section[data-testid="stSidebar"][aria-expanded="false"] {
     display: block !important;
     visibility: visible !important;
-    opacity: 1 !important;
-    color: var(--accent-gold) !important;
-    fill: var(--accent-gold) !important;
-}
-
-/* Also target by class patterns Streamlit uses */
-div[class*="collapsedControl"],
-button[class*="collapse"] {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    transform: none !important;
+    margin-left: 0 !important;
 }
 
 /* ===== Cards & Containers ===== */

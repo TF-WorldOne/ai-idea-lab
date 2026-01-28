@@ -27,3 +27,10 @@ logs/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Google Cloud
+.gcloudignore
