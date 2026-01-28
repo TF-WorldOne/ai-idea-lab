@@ -192,16 +192,23 @@ def get_facilitator_prompt(expertise_level: str = "General") -> str:
 
 # Facilitator Model Features for UI Display
 FACILITATOR_MODEL_FEATURES = {
+    # OpenAI
+    "GPT-5": "🌟最新・最高品質・遅い",
     "GPT-4o": "💰高品質・遅い",
-    "GPT-4o-mini": "⚡高速・経済的",
-    "Claude Sonnet 4.5": "💰高品質・遅い", 
-    "Claude Sonnet 4": "💰高品質・遅い",
+    "o3": "🤔推論特化・超遅い",
+    "o4-mini": "🤔推論特化・高速",
+    "GPT-4.1": "💰高品質・遅い",
+    # Anthropic
+    "Claude Opus 4.5": "💰最高品質・遅い",
+    "Claude Opus 4": "💰最高品質・遅い",
+    "Claude Sonnet 4": "⚖️バランス型",
     "Claude Haiku 4.5": "⚡超高速・経済的",
-    "Claude Haiku 4": "⚡超高速・経済的",
-    "Gemini 2.5 Flash": "⚡高速",
+    # Google
     "Gemini 2.5 Pro": "💰高品質",
+    "Gemini 2.5 Flash": "⚡高速",
     "Gemini 2.0 Flash": "⚡ultra高速",
-    "Gemini 2.0 Flash Thinking": "🤔思考型・遅い"
+    "Gemini 3 Pro (Preview)": "🔬実験的・最高品質",
+    "Gemini 3 Flash (Preview)": "🔬実験的・高速",
 }
 
 
