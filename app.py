@@ -14,7 +14,10 @@ from config import (
     OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY,
     OPENAI_MODELS, ANTHROPIC_MODELS, GOOGLE_MODELS, ALL_MODELS,
     NO_TEMPERATURE_MODELS, get_system_prompt, get_facilitator_prompt,
-    get_avatar, check_api_keys
+    get_avatar, check_api_keys,
+    # Personality system
+    AI_PERSONALITIES, PERSONALITY_MODES,
+    get_personality_info, get_personality_avatar, get_all_personality_ids
 )
 
 # --- Page Configuration ---
@@ -622,6 +625,16 @@ header {visibility: hidden;}
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
+
+/* ===== Personality Badge ===== */
+.personality-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -653,9 +666,11 @@ def init_clients():
 
 
 # --- AI Call Function ---
-def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, topic: str = "", temperature: float = 0.7, expertise: str = "General") -> str:
+def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, 
+           topic: str = "", temperature: float = 0.7, expertise: str = "General",
+           personality: str = None) -> str:
     provider, model_id = ALL_MODELS[model_name]
-    system_prompt = get_system_prompt(expertise)
+    system_prompt = get_system_prompt(expertise, personality)
 
     if is_first:
         prompt = f"Topic: {topic}\n\nPlease propose your initial idea on this topic."
@@ -774,6 +789,11 @@ if "current_topic" not in st.session_state:
     st.session_state.current_topic = None
 if "current_participants" not in st.session_state:
     st.session_state.current_participants = []
+# Personality system
+if "personality_assignments" not in st.session_state:
+    st.session_state.personality_assignments = {}
+if "personality_mode" not in st.session_state:
+    st.session_state.personality_mode = "auto"
 
 
 # --- Main Layout ---
@@ -857,6 +877,39 @@ with col_config:
             value="General",
             help="Adjust discussion complexity and terminology"
         )
+        
+        # Personality settings
+        st.markdown('<p class="section-header">AI個性設定</p>', unsafe_allow_html=True)
+        personality_mode = st.radio(
+            "個性割り当てモード",
+            options=list(PERSONALITY_MODES.keys()),
+            format_func=lambda x: PERSONALITY_MODES[x],
+            horizontal=True,
+            label_visibility="collapsed"
+        )
+        st.session_state.personality_mode = personality_mode
+        
+        # Show personality legend
+        with st.expander("✦ 個性の説明", expanded=False):
+            for pid, pinfo in AI_PERSONALITIES.items():
+                st.markdown(
+                    f'{pinfo["emoji"]} **{pinfo["name_ja"]}** ({pinfo["name_en"]}): {pinfo["description_ja"]}'
+                )
+        
+        # Manual personality assignment
+        if personality_mode == "manual" and selected_models:
+            st.markdown('<p class="section-header">モデル別個性</p>', unsafe_allow_html=True)
+            personality_options = [(pid, f'{pinfo["emoji"]} {pinfo["name_ja"]}') 
+                                   for pid, pinfo in AI_PERSONALITIES.items()]
+            
+            for model in selected_models:
+                selected_personality = st.selectbox(
+                    f"{model}",
+                    options=[p[0] for p in personality_options],
+                    format_func=lambda x: next(p[1] for p in personality_options if p[0] == x),
+                    key=f"personality_{model}"
+                )
+                st.session_state.personality_assignments[model] = selected_personality
 
 # --- MIDDLE COLUMN: Main Interaction ---
 with col_main:
@@ -904,15 +957,56 @@ with chat_container:
         
         for msg in st.session_state.discussion_history:
             with st.chat_message("assistant", avatar=msg["avatar"]):
-                st.markdown(f'<span class="model-badge">{msg["model"]}</span>', unsafe_allow_html=True)
+                # Display personality badge if available
+                if "personality_info" in msg and msg["personality_info"]:
+                    pinfo = msg["personality_info"]
+                    st.markdown(
+                        f'<span class="model-badge">{msg["model"]}</span> '
+                        f'<span class="personality-badge" style="background: {pinfo["color"]}20; '
+                        f'color: {pinfo["color"]}; border: 1px solid {pinfo["color"]}40;">'
+                        f'{pinfo["emoji"]} {pinfo["name_ja"]}</span>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(f'<span class="model-badge">{msg["model"]}</span>', unsafe_allow_html=True)
                 st.write(msg["content"])
 
 # --- Run Session ---
+def assign_personalities(models: list, mode: str) -> dict:
+    """Assign personalities to models based on mode"""
+    import random
+    assignments = {}
+    personality_ids = get_all_personality_ids()
+    
+    if mode == "auto":
+        # Cycle through personalities for balanced discussion
+        for i, model in enumerate(models):
+            assignments[model] = personality_ids[i % len(personality_ids)]
+    elif mode == "random":
+        for model in models:
+            assignments[model] = random.choice(personality_ids)
+    elif mode == "manual":
+        # Use session state assignments
+        assignments = st.session_state.personality_assignments.copy()
+        # Fill in any missing assignments
+        for model in models:
+            if model not in assignments:
+                assignments[model] = personality_ids[0]
+    
+    return assignments
+
 if start_button and can_start:
     # Clear previous session
     st.session_state.discussion_history = []
     st.session_state.current_topic = topic
     st.session_state.current_participants = selected_models
+    
+    # Assign personalities
+    st.session_state.personality_assignments = assign_personalities(
+        selected_models, 
+        st.session_state.personality_mode
+    )
+    current_assignments = st.session_state.personality_assignments
     
     clients = init_clients()
     history_log = []
@@ -940,10 +1034,22 @@ if start_button and can_start:
                     current_call += 1
                     progress = current_call / total_calls
                     progress_bar.progress(progress)
-                    status_text.text(f"🤖 {model} is thinking... ({current_call}/{total_calls})")
                     
-                    with st.chat_message("assistant", avatar=get_avatar(model)):
-                        st.markdown(f'<span class="model-badge">{model}</span>', unsafe_allow_html=True)
+                    # Get personality for this model
+                    personality = current_assignments.get(model)
+                    personality_info = get_personality_info(personality)
+                    
+                    status_text.text(f"{personality_info['emoji']} {model} ({personality_info['name_ja']}) is thinking... ({current_call}/{total_calls})")
+                    
+                    with st.chat_message("assistant", avatar=get_personality_avatar(personality, model)):
+                        # Display model name and personality badge
+                        st.markdown(
+                            f'<span class="model-badge">{model}</span> '
+                            f'<span class="personality-badge" style="background: {personality_info["color"]}20; '
+                            f'color: {personality_info["color"]}; border: 1px solid {personality_info["color"]}40;">'
+                            f'{personality_info["emoji"]} {personality_info["name_ja"]}</span>',
+                            unsafe_allow_html=True
+                        )
 
                         # Retry logic for API calls
                         max_retries = 2
@@ -953,12 +1059,16 @@ if start_button and can_start:
                         while retry_count <= max_retries and msg is None:
                             try:
                                 if i == 0 and j == 0:
-                                    msg = ask_ai(model, clients, "", is_first=True, topic=topic, temperature=creativity, expertise=expertise_level)
+                                    msg = ask_ai(model, clients, "", is_first=True, topic=topic, 
+                                                 temperature=creativity, expertise=expertise_level,
+                                                 personality=personality)
                                 else:
                                     # Dynamic context window: fewer messages for longer discussions
                                     context_window = max(3, min(6, 20 // rounds))
                                     context_text = "\n\n".join(history_log[-context_window:])
-                                    msg = ask_ai(model, clients, context_text, temperature=creativity, expertise=expertise_level)
+                                    msg = ask_ai(model, clients, context_text, 
+                                                 temperature=creativity, expertise=expertise_level,
+                                                 personality=personality)
                                 
                                 # Check if the response is an error message
                                 if msg and msg.startswith("❌"):
@@ -983,12 +1093,14 @@ if start_button and can_start:
 
                         if msg:
                             st.write(msg)
-                            history_log.append(f"[{model}]: {msg}")
+                            history_log.append(f"[{model} ({personality_info['name_ja']})]: {msg}")
                             # Store in session state for persistence
                             st.session_state.discussion_history.append({
                                 "model": model,
                                 "content": msg,
-                                "avatar": get_avatar(model)
+                                "avatar": get_personality_avatar(personality, model),
+                                "personality": personality,
+                                "personality_info": personality_info
                             })
                         else:
                             error_msg = f"❌ {model} failed to respond"
