@@ -84,9 +84,12 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
 }
 
 /* ===== Typography & Headers ===== */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 300 !important;
+    letter-spacing: 0.05em !important;
+}
+
 h1 {
-    font-weight: 800 !important;
-    letter-spacing: -0.03em !important;
     background: linear-gradient(135deg, #D4AF37 0%, #F5E6A3 50%, #D4AF37 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -97,14 +100,10 @@ h1 {
 
 h2 {
     color: var(--accent-gold) !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.02em !important;
 }
 
 h3 {
     color: var(--text-primary) !important;
-    font-weight: 600 !important;
-    letter-spacing: -0.01em !important;
 }
 
 p, span, label, div {
@@ -733,13 +732,17 @@ with col_input:
     st.markdown("### ✦ Enter Your Topic")
     topic = st.text_area(
         "Topic",
-        "Innovative approaches to solve rural depopulation",
+        "",
         height=100,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        placeholder="Describe your topic or idea here..."
     )
 
     # Validation
     can_start = True
+    if not topic.strip():
+        st.warning("⚠️ Please enter a topic")
+        can_start = False
     if len(selected_models) < 2:
         st.warning("⚠️ Please select at least 2 AI collaborators")
         can_start = False
