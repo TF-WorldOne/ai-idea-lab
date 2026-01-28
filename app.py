@@ -78,9 +78,15 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
     color: var(--text-primary) !important;
 }
 
-/* Hide Streamlit header and reduce top space */
+/* Hide Streamlit header background but keep sidebar toggle */
 header[data-testid="stHeader"] {
-    display: none !important;
+    background: transparent !important;
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+header[data-testid="stHeader"] > div {
+    background: transparent !important;
 }
 
 .main .block-container {
