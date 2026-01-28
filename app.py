@@ -20,7 +20,7 @@ from config import (
 # --- Page Configuration ---
 st.set_page_config(
     page_title="X-Think AI Idea Lab",
-    page_icon="✦",
+    page_icon="assets/siteicon.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
