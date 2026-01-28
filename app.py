@@ -825,8 +825,22 @@ if start_button and can_start:
     # Update Canvas with results
     full_log = "\n\n".join(history_log)
 
+    # Show spinner in both columns during summary generation
+    with col_canvas:
+        canvas_spinner_placeholder = st.empty()
+        canvas_spinner_placeholder.markdown("""
+        <div class="canvas-card">
+            <h2 class="report-title">✦ Idea Synthesis Report</h2>
+            <div class="generating-spinner"></div>
+            <p>Synthesizing discussion...</p>
+        </div>
+        """, unsafe_allow_html=True)
+
     with st.spinner(f"✦ {facilitator} is creating the summary..."):
         conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, expertise=expertise_level)
+
+    # Clear the spinner placeholder
+    canvas_spinner_placeholder.empty()
 
     # Save to session state
     st.session_state.conclusion = conclusion
@@ -835,6 +849,7 @@ if start_button and can_start:
     st.session_state.generating = False
 
     show_star_celebration()
+    st.rerun()
 
 # --- Canvas Display ---
 with col_canvas:
