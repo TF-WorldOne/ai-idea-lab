@@ -103,7 +103,7 @@ class NotebookLMClient:
         Returns:
             Notebook resource with 'name' (ID) and other metadata
         """
-        data = {"displayName": title}
+        data = {"title": title}
         return self._make_request("POST", "/notebooks", data)
     
     def add_text_source(
