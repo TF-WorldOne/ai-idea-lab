@@ -38,8 +38,17 @@ from config import (
     # Dynamic expertise
     EXPERTISE_EXTRACTION_PROMPT, DYNAMIC_EXPERTISE_PROMPT_TEMPLATE,
     # File upload
-    FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT
+    FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT,
+    # NotebookLM settings
+    NOTEBOOKLM_ENABLED, NOTEBOOKLM_REGION, GCP_PROJECT_NUMBER
 )
+
+# NotebookLM integration (optional)
+try:
+    from notebooklm_integration import export_discussion_to_notebooklm
+    NOTEBOOKLM_AVAILABLE = True
+except ImportError:
+    NOTEBOOKLM_AVAILABLE = False
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -1740,12 +1749,44 @@ with synthesis_container:
             st.markdown(f'<span class="model-badge">{st.session_state.facilitator_name}</span>', unsafe_allow_html=True)
             st.markdown(st.session_state.conclusion)
 
-        st.download_button(
-            "✦ Download Report",
-            st.session_state.full_report,
-            "xthink_idea_report.txt",
-            use_container_width=True
-        )
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button(
+                "✦ Download Report",
+                st.session_state.full_report,
+                "xthink_idea_report.txt",
+                use_container_width=True
+            )
+        
+        # NotebookLM Export Button
+        with col2:
+            if NOTEBOOKLM_ENABLED and NOTEBOOKLM_AVAILABLE:
+                if st.button("📓 NotebookLMに送信", use_container_width=True):
+                    with st.spinner("NotebookLMにエクスポート中..."):
+                        # Prepare discussion history
+                        discussion_data = []
+                        for msg in st.session_state.discussion_history:
+                            discussion_data.append({
+                                "model": msg.get("model", "Unknown"),
+                                "personality": msg.get("personality", ""),
+                                "content": msg.get("content", "")
+                            })
+                        
+                        result = export_discussion_to_notebooklm(
+                            topic=st.session_state.current_topic,
+                            discussion_history=discussion_data,
+                            summary=st.session_state.conclusion,
+                            project_number=GCP_PROJECT_NUMBER,
+                            region=NOTEBOOKLM_REGION
+                        )
+                        
+                        if result["success"]:
+                            st.success("✅ NotebookLMにエクスポートしました！")
+                            st.markdown(f"[📓 NotebookLMで開く]({result['url']})")
+                        else:
+                            st.error(f"エクスポートに失敗: {result['error']}")
+            elif NOTEBOOKLM_ENABLED and not NOTEBOOKLM_AVAILABLE:
+                st.button("📓 NotebookLM (未設定)", disabled=True, use_container_width=True)
 
         if st.button("✦ Reset", use_container_width=True):
             st.session_state.conclusion = None

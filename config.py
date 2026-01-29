@@ -28,6 +28,11 @@ OPENAI_API_KEY = _get_api_key("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = _get_api_key("ANTHROPIC_API_KEY")
 GOOGLE_API_KEY = _get_api_key("GOOGLE_API_KEY")
 
+# --- NotebookLM Enterprise Settings ---
+NOTEBOOKLM_ENABLED = os.getenv("NOTEBOOKLM_ENABLED", "true").lower() == "true"
+NOTEBOOKLM_REGION = os.getenv("NOTEBOOKLM_REGION", "us")  # us, eu, or global
+GCP_PROJECT_NUMBER = os.getenv("GCP_PROJECT_NUMBER", "1089461983457")
+
 # --- Model Definitions ---
 # Models that don't support temperature parameter
 NO_TEMPERATURE_MODELS = {"gpt-5", "o3", "o4-mini"}
