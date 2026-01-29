@@ -1308,7 +1308,7 @@ with col_config:
 
     # Settings
     with st.expander("✦ Settings", expanded=True):
-        rounds = st.slider("Number of Rounds", 1, 10, 2)
+        rounds = st.slider("Number of Rounds", 1, 5, 2, help="推奨: 2-3ラウンド。多すぎると議論が複雑になります")
         creativity = st.slider("Creativity", 0.0, 1.0, 0.7, 0.1, help="Higher = more adventurous, Lower = more stable")
         expertise_level = st.select_slider(
             "Expertise Level",
