@@ -1,12 +1,12 @@
 @echo off
 echo ========================================================
 echo  AI Idea Lab Pro - Cloud Run Deployment
-echo  Project: xworld-official
+echo  Project: investment-analyst-b3e5c
 echo ========================================================
 
 echo.
-echo [1/2] Building Container Image (Cloud Build)...
-call gcloud builds submit --tag gcr.io/xworld-official/ai-idea-lab-pro .
+echo [1/2] Building Container Image with Artifact Registry...
+call gcloud builds submit --tag asia-northeast1-docker.pkg.dev/investment-analyst-b3e5c/ai-idea-lab/ai-idea-lab --region=asia-northeast1 --project investment-analyst-b3e5c .
 if %errorlevel% neq 0 (
     echo [ERROR] Build failed.
     pause
@@ -15,12 +15,13 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [2/2] Deploying to Cloud Run...
-call gcloud run deploy ai-idea-lab-pro ^
-  --image gcr.io/xworld-official/ai-idea-lab-pro ^
+call gcloud run deploy ai-idea-lab ^
+  --image asia-northeast1-docker.pkg.dev/investment-analyst-b3e5c/ai-idea-lab/ai-idea-lab ^
   --platform managed ^
-  --region us-central1 ^
+  --region asia-northeast1 ^
   --allow-unauthenticated ^
-  --port 8080
+  --port 8080 ^
+  --project investment-analyst-b3e5c
 if %errorlevel% neq 0 (
     echo [ERROR] Deployment failed.
     pause
@@ -28,5 +29,7 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [SUCCESS] Deployment Complete!
-echo check the URL above.
+echo [SUCCESS] Build and Deployment Complete!
+echo Check the URL above or visit:
+echo https://ai-idea-lab-1b89461983457.asia-northeast1.run.app
+pause

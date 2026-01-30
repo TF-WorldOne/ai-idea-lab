@@ -1,9 +1,8 @@
-[theme]
-primaryColor = "#D4AF37"
-backgroundColor = "#050505"
-secondaryBackgroundColor = "#0A0A0A"
-textColor = "#F0F0F0"
-font = "sans serif"
+[server]
+enableCORS = false
+enableXsrfProtection = false
+headless = true
+enableWebsocketCompression = false
 
 [client]
 showSidebarNavigation = true

@@ -32,5 +32,8 @@ logs/
 .firebase/
 firebase-debug.log
 
+
 # Google Cloud
 .gcloudignore
+service-account-key.json
+secrets/

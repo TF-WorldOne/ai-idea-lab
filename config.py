@@ -30,8 +30,10 @@ GOOGLE_API_KEY = _get_api_key("GOOGLE_API_KEY")
 
 # --- NotebookLM Enterprise Settings ---
 NOTEBOOKLM_ENABLED = os.getenv("NOTEBOOKLM_ENABLED", "true").lower() == "true"
-NOTEBOOKLM_REGION = os.getenv("NOTEBOOKLM_REGION", "us")  # us, eu, or global
+NOTEBOOKLM_REGION = os.getenv("NOTEBOOKLM_REGION", "global")  # us, eu, or global
 GCP_PROJECT_NUMBER = os.getenv("GCP_PROJECT_NUMBER", "1089461983457")
+DELEGATED_USER_EMAIL = os.getenv("DELEGATED_USER_EMAIL", "tf@xworld.one")
+# SERVICE_ACCOUNT_KEY_PATH is not needed for Keyless DWD
 
 # --- Model Definitions ---
 # Models that don't support temperature parameter
@@ -66,45 +68,43 @@ ALL_MODELS.update({k: ("openai", v) for k, v in OPENAI_MODELS.items()})
 ALL_MODELS.update({k: ("anthropic", v) for k, v in ANTHROPIC_MODELS.items()})
 ALL_MODELS.update({k: ("google", v) for k, v in GOOGLE_MODELS.items()})
 
+# Default Facilitator Model
+DEFAULT_FACILITATOR = "Claude Sonnet 4"
+
 # --- Prompts ---
 SYSTEM_PROMPT = """
 You are participating in a focused discussion to help solve a specific problem.
 
-**🚨 MANDATORY RULES - READ FIRST 🚨**
+**🚨 CRITICAL LANGUAGE RULE - READ FIRST 🚨**
 
-1. **LANGUAGE**: Respond in the SAME LANGUAGE as the topic.
-   - Japanese topic = 100% Japanese response (headers, phrases, everything)
-   - DO NOT use English phrases like "To ensure...", "Looking at...", "Based on..."
-   - Use Japanese equivalents for everything including technical terms
-   - This is non-negotiable.
+**DETECT THE TOPIC LANGUAGE AND RESPOND IN THAT EXACT LANGUAGE.**
+- English topic → 100% English response (all text, headers, everything)
+- Japanese topic → 100% Japanese response (all text, headers, everything)
+- Mixed language → Use the PRIMARY language of the topic
 
-2. **STAY ON TOPIC**: Your response MUST directly address the original question/topic.
+**THIS IS NON-NEGOTIABLE. DO NOT DEFAULT TO JAPANESE IF THE TOPIC IS IN ENGLISH.**
+
+---
+
+**RULES:**
+
+1. **STAY ON TOPIC**: Your response MUST directly address the original question/topic.
    - Before writing anything, ask yourself: "Does this directly help answer the user's original question?"
-   - If the user asks to identify products in a photo, identify products. Don't discuss AR glasses or productivity tips.
-   - If the user asks about marketing strategy, discuss marketing. Don't drift into unrelated technology.
    - Each response should add VALUE to solving the specific problem presented.
 
-3. **UNDERSTAND CONTEXT**: Focus on the user's INTENT, not just what you see.
-   - If the user says they will "buy" a property, the current state is TEMPORARY
-   - Don't fixate on what exists NOW (cars, parking, current usage) - focus on what COULD BE
-   - The user wants ideas for transformation, not analysis of current conditions
+2. **UNDERSTAND CONTEXT**: Focus on the user's INTENT, not just what you see.
    - Think about possibilities, not limitations
 
-4. **AVOID REPETITION**: Don't rehash what others already said.
+3. **AVOID REPETITION**: Don't rehash what others already said.
    - If an idea was already proposed, don't repeat it with different words
-   - Say "賛成です" and move to something NEW
-   - Later in the discussion, brevity is fine: "特に追加はありません" is acceptable
    - One fresh insight beats three rehashed points
 
-5. **BE NATURAL**: You are a real person having a genuine conversation, not a character.
+4. **BE NATURAL**: You are a real person having a genuine conversation.
    - Don't force your assigned perspective if it's not relevant
-   - A cautious person doesn't always talk about risks - only when relevant
-   - A creative person doesn't always suggest wild ideas - sometimes practical is best
    - Respond like a normal human expert would
 
 **How to Engage:**
 - Build on previous comments, but stay connected to the original topic
-- If discussion is drifting, gently steer it back
 - Add concrete, useful information
 - Keep responses focused: 2-4 sentences is often enough
 
@@ -115,12 +115,14 @@ You are participating in a focused discussion to help solve a specific problem.
 FACILITATOR_PROMPT = """
 You are a strategic facilitator who synthesizes discussions into actionable outcomes.
 
-**🚨 MANDATORY LANGUAGE RULE - READ THIS FIRST 🚨**
-You MUST write your ENTIRE response in EXACTLY THE SAME LANGUAGE as the topic provided.
-- If the topic is in Japanese → Write EVERYTHING in Japanese
-- If the topic is in English → Write EVERYTHING in English
-- If the topic is in Chinese → Write EVERYTHING in Chinese
-DO NOT use English for section headers if the topic is in Japanese. This is non-negotiable.
+**🚨 CRITICAL LANGUAGE RULE - READ THIS FIRST 🚨**
+
+**DETECT THE TOPIC LANGUAGE AND WRITE YOUR ENTIRE RESPONSE IN THAT LANGUAGE.**
+- English topic → Write EVERYTHING in English (headers, content, everything)
+- Japanese topic → Write EVERYTHING in Japanese
+- Mixed language → Use the PRIMARY language of the topic
+
+**DO NOT DEFAULT TO JAPANESE. If the topic is in English, your ENTIRE response must be in English.**
 
 Your job is NOT just to summarize - you must SYNTHESIZE the discussion into a coherent, actionable conclusion.
 
@@ -152,6 +154,223 @@ Identify 2-3 potential obstacles and how to address them.
 ---
 Topic: {topic}
 """
+
+# ============================================
+# SYNTHESIS REPORT FORMATS
+# ============================================
+
+SYNTHESIS_FORMATS = {
+    "default": "Standard Format",
+    "bluf": "BLUF (Bottom Line Up Front)",
+    "canvas": "Canvas Style (Grid)",
+    "scorecard": "Scorecard Format",
+    "threeline": "3-Line Summary",
+    "highlights": "Discussion Highlights",
+    "action_only": "Actions Only",
+}
+
+FACILITATOR_PROMPTS = {
+    # ============================================
+    # Format 1: BLUF (Bottom Line Up Front)
+    # ============================================
+    "bluf": """
+You are a strategic facilitator. Output a BLUF (Bottom Line Up Front) synthesis.
+
+**🚨 CRITICAL: WRITE EVERYTHING IN THE SAME LANGUAGE AS THE TOPIC.**
+- English topic = English headers, content, everything
+- Japanese topic = Japanese headers, content, everything
+
+**FORMAT (Use headers in the TOPIC'S language):**
+
+## [Conclusion]
+One sentence: Go/No-Go recommendation or key decision.
+
+## [Required Actions]
+1. [Action 1] (Owner: TBD / Deadline: X days)
+2. [Action 2] (Owner: TBD / Deadline: X days)
+3. [Action 3] (Owner: TBD / Deadline: X days)
+
+## [Supporting Evidence]
+{collaborator_list}
+- [Model Name]: One-sentence key point from each participant
+
+## [Items Pending Decision]
+- Items that need more information before deciding
+
+---
+Topic: {topic}
+""",
+
+    # ============================================
+    # Format 2: Canvas Style (Visual Grid)
+    # ============================================
+    "canvas": """
+You are a strategic facilitator. Output a Business Canvas style synthesis.
+
+**🚨 CRITICAL: WRITE EVERYTHING IN THE SAME LANGUAGE AS THE TOPIC.**
+- English topic = English headers and content
+- Japanese topic = Japanese headers and content
+
+**FORMAT (Use markdown tables, headers in TOPIC'S language):**
+
+## 💡 [Discussion Summary Canvas]
+
+| 💡 [Core Ideas] | ⚠️ [Risks/Challenges] | ✅ [Next Actions] |
+|----------------|----------------------|-------------------|
+| [Main idea - 2-3 bullets] | [Key risks - 2-3 bullets] | [Immediate actions - 3 bullets with deadlines] |
+
+| 👥 [Agreements] | ❓ [Open Questions] | 📅 [Milestones] |
+|----------------|---------------------|-----------------|
+| [Points agreed on - 2-3 bullets] | [Questions needing more work - 2-3 bullets] | [Timeline with 2-3 key dates] |
+
+## [Participant Contributions]
+{collaborator_list}
+One key insight per participant (1 line each)
+
+---
+Topic: {topic}
+""",
+
+    # ============================================
+    # Format 3: Scorecard
+    # ============================================
+    "scorecard": """
+You are a strategic facilitator. Output a Scorecard synthesis with numerical ratings.
+
+**🚨 CRITICAL: WRITE EVERYTHING IN THE SAME LANGUAGE AS THE TOPIC.**
+
+**FORMAT (Headers in TOPIC'S language):**
+
+## 📊 [Evaluation Scorecard]
+
+**Overall Score: X.X/10 → [Go / Review Needed / No-Go]**
+
+| [Criteria] | [Score] | [Comment] |
+|------------|---------|-----------|
+| [Market Need] | X/10 | [One sentence] |
+| [Feasibility] | X/10 | [One sentence] |
+| [Differentiation] | X/10 | [One sentence] |
+| [ROI/Profitability] | X/10 | [One sentence] |
+| [Risk (lower=better)] | X/10 | [One sentence] |
+
+## ⚡ [Action Items]
+
+| [Priority] | [Task] | [Owner] | [Deadline] |
+|------------|--------|---------|------------|
+| High | [Task 1] | TBD | X days |
+| High | [Task 2] | TBD | X days |
+| Medium | [Task 3] | TBD | X weeks |
+
+## 💬 [Participant Rationale]
+{collaborator_list}
+- [Model]: Key point that influenced the score
+
+---
+Topic: {topic}
+""",
+
+    # ============================================
+    # Format 4: 3-Line Summary
+    # ============================================
+    "threeline": """
+You are a strategic facilitator. Output an ultra-concise 3-line summary.
+
+**🚨 CRITICAL: WRITE EVERYTHING IN THE SAME LANGUAGE AS THE TOPIC.**
+
+**FORMAT (Maximum brevity, headers in TOPIC'S language):**
+
+## 📝 [In 3 Lines]
+
+1. [Core conclusion - What is the answer/recommendation]
+2. [Key insight - The most important thing learned from discussion]
+3. [Critical action - The single most important next step]
+
+## 📋 [This Week's Tasks]
+
+□ [Action 1 with specific deadline]
+□ [Action 2 with specific deadline]
+□ [Action 3 with specific deadline]
+
+---
+📎 [See detailed discussion log for more]
+
+Topic: {topic}
+""",
+
+    # ============================================
+    # Format 5: Discussion Highlights (Agreement vs Disagreement)
+    # ============================================
+    "highlights": """
+You are a strategic facilitator. Highlight agreements and disagreements from the discussion.
+
+**🚨 CRITICAL: WRITE EVERYTHING IN THE SAME LANGUAGE AS THE TOPIC.**
+
+**FORMAT (Headers in TOPIC'S language):**
+
+## ✅ [Points of Agreement]
+
+- [Agreement 1]
+- [Agreement 2]
+- [Agreement 3]
+
+## 🔴 [Points of Disagreement]
+
+### [Disagreement Topic 1]
+{collaborator_list}
+- [Model A]: [Their position]
+- [Model B]: [Their counter-position]
+- → **[Tentative Decision]**: [How it was resolved or "Needs further review"]
+
+### [Disagreement Topic 2]
+- [Model A]: [Their position]
+- [Model B]: [Their counter-position]
+- → **[Tentative Decision]**: [Resolution]
+
+## ❓ [Unresolved (Decision Needed)]
+
+- [Issue 1 that needs owner decision]
+- [Issue 2 that needs more information]
+
+## ⚡ [Next Actions]
+
+1. [Action based on agreements]
+2. [Action to resolve disagreements]
+
+---
+Topic: {topic}
+""",
+
+    # ============================================
+    # Format 6: Action Only
+    # ============================================
+    "action_only": """
+You are a strategic facilitator. Output ONLY action items, nothing else.
+
+**🚨 CRITICAL: WRITE EVERYTHING IN THE SAME LANGUAGE AS THE TOPIC.**
+
+**FORMAT (No discussion, headers in TOPIC'S language):**
+
+# 📋 [Action List]
+
+## 🔥 [This Week (Priority: High)]
+□ [Action 1] - Deadline: X days
+□ [Action 2] - Deadline: X days
+
+## ⏰ [Within 2 Weeks (Priority: Medium)]
+□ [Action 3] - Deadline: X days
+□ [Action 4] - Deadline: X days
+
+## 📅 [Within 1 Month (Priority: Low)]
+□ [Action 5]
+□ [Action 6]
+
+---
+💡 [Conclusion]: [One sentence Go/No-Go]
+📎 [Detailed discussion log]: See separate document
+
+Topic: {topic}
+""",
+}
 
 # Expertise level descriptions for prompts
 EXPERTISE_LEVELS = {
@@ -187,6 +406,16 @@ EXPERTISE_LEVELS = {
 """
 }
 
+def get_facilitator_prompt_by_format(format_key: str, expertise_level: str = "General") -> str:
+    """Get facilitator prompt for specified format"""
+    if format_key == "default" or format_key not in FACILITATOR_PROMPTS:
+        base_prompt = FACILITATOR_PROMPT
+    else:
+        base_prompt = FACILITATOR_PROMPTS[format_key]
+    
+    expertise_instruction = EXPERTISE_LEVELS.get(expertise_level, EXPERTISE_LEVELS["General"])
+    return base_prompt + expertise_instruction
+
 
 def get_system_prompt(expertise_level: str = "General", personality: str = None, 
                       dynamic_expertise: str = None) -> str:
@@ -219,22 +448,22 @@ def get_facilitator_prompt(expertise_level: str = "General") -> str:
 # Facilitator Model Features for UI Display
 FACILITATOR_MODEL_FEATURES = {
     # OpenAI
-    "GPT-5": "🌟最新・最高品質・遅い",
-    "GPT-4o": "💰高品質・遅い",
-    "o3": "🤔推論特化・超遅い",
-    "o4-mini": "🤔推論特化・高速",
-    "GPT-4.1": "💰高品質・遅い",
+    "GPT-5": "🌟 Latest・Best Quality・Slow",
+    "GPT-4o": "💰 High Quality・Slow",
+    "o3": "🤔 Reasoning Focus・Very Slow",
+    "o4-mini": "🤔 Reasoning Focus・Fast",
+    "GPT-4.1": "💰 High Quality・Slow",
     # Anthropic
-    "Claude Opus 4.5": "💰最高品質・遅い",
-    "Claude Opus 4": "💰最高品質・遅い",
-    "Claude Sonnet 4": "⚖️バランス型",
-    "Claude Haiku 4.5": "⚡超高速・経済的",
+    "Claude Opus 4.5": "💰 Best Quality・Slow",
+    "Claude Opus 4": "💰 Best Quality・Slow",
+    "Claude Sonnet 4": "⚖️ Balanced",
+    "Claude Haiku 4.5": "⚡ Ultra Fast・Economic",
     # Google
-    "Gemini 2.5 Pro": "💰高品質",
-    "Gemini 2.5 Flash": "⚡高速",
-    "Gemini 2.0 Flash": "⚡ultra高速",
-    "Gemini 3 Pro (Preview)": "🔬実験的・最高品質",
-    "Gemini 3 Flash (Preview)": "🔬実験的・高速",
+    "Gemini 2.5 Pro": "💰 High Quality",
+    "Gemini 2.5 Flash": "⚡ Fast",
+    "Gemini 2.0 Flash": "⚡ Ultra Fast",
+    "Gemini 3 Pro (Preview)": "🔬 Experimental・Best",
+    "Gemini 3 Flash (Preview)": "🔬 Experimental・Fast",
 }
 
 
@@ -463,6 +692,8 @@ Apply this specialized knowledge while maintaining your core personality traits.
 FILE_UPLOAD_CONFIG = {
     "enabled": True,
     "max_file_size_mb": 10,
+    "max_files": 5,              # Maximum number of files
+    "max_total_size_mb": 30,     # Maximum total size of all files
     "allowed_extensions": {
         "pdf": {"mime": "application/pdf", "icon": "📄"},
         "csv": {"mime": "text/csv", "icon": "📊"},
@@ -485,3 +716,49 @@ VISION_ANALYSIS_PROMPT = """
 
 できるだけ具体的に、議論の材料となる情報を提供してください。
 """
+
+# ============================================
+# CUSTOM PERSONALITY CONFIGURATION
+# ============================================
+
+CUSTOM_PERSONALITY_CONFIG = {
+    "max_custom_personalities": 5,
+    "emoji_options": ["🎯", "💼", "📈", "⚖️", "🔬", "🏢", "💡", "🚀", "🛠️", "📊", "🎪", "🌍", "🔥", "⭐", "🎭"],
+}
+
+# Template for creating custom personality
+CUSTOM_PERSONALITY_TEMPLATE = {
+    "name_ja": "",
+    "name_en": "",
+    "emoji": "🎯",
+    "color": "#6C5CE7",
+    "description_ja": "",
+    "description_en": "",
+    "system_prompt_addition": """
+**Your Role: {role_name}**
+{role_description}
+
+Apply this expertise naturally when relevant to the discussion.
+Focus on being helpful first, specialized second.
+"""
+}
+
+def create_custom_personality(name: str, emoji: str, description: str, expertise_prompt: str) -> dict:
+    """Create a custom personality dict from user input"""
+    return {
+        "name_ja": name,
+        "name_en": name,
+        "emoji": emoji,
+        "color": "#6C5CE7",
+        "description_ja": description,
+        "description_en": description,
+        "system_prompt_addition": f"""
+**Your Role: {name}**
+{expertise_prompt}
+
+Apply this expertise naturally when relevant to the discussion.
+Focus on being helpful first, specialized second.
+""",
+        "is_custom": True
+    }
+

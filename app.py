@@ -40,22 +40,25 @@ from config import (
     # File upload
     FILE_UPLOAD_CONFIG, VISION_ANALYSIS_PROMPT,
     # NotebookLM settings
-    NOTEBOOKLM_ENABLED, NOTEBOOKLM_REGION, GCP_PROJECT_NUMBER
+    NOTEBOOKLM_ENABLED, NOTEBOOKLM_REGION, GCP_PROJECT_NUMBER,
+    DEFAULT_FACILITATOR,
+    # Synthesis report formats
+    SYNTHESIS_FORMATS, get_facilitator_prompt_by_format
 )
 
-# NotebookLM integration (optional)
+
+
+# NotebookLM integration
 try:
     from notebooklm_integration import export_discussion_to_notebooklm
     NOTEBOOKLM_AVAILABLE = True
 except ImportError:
     NOTEBOOKLM_AVAILABLE = False
-
-# --- Page Configuration ---
 st.set_page_config(
     page_title="X-Think AI Idea Lab",
     page_icon="assets/siteicon.png",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # --- Logo Helper Function ---
@@ -110,10 +113,46 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"], [class*="
     color: var(--text-primary) !important;
 }
 
-/* ===== AGGRESSIVE: Hide ALL Streamlit UI elements ===== */
-/* Hide sidebar completely */
+/* ===== Sidebar Styling ===== */
+/* Style sidebar with dark theme */
 section[data-testid="stSidebar"] {
-    display: none !important;
+    background-color: var(--bg-card) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+/* FORCE sidebar collapse/expand button to be visible */
+/* Target all possible selectors for Streamlit sidebar toggle */
+button[data-testid="stSidebarCollapsedControl"],
+button[data-testid="baseButton-headerNoPadding"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
+div[data-testid="stSidebarCollapsedControl"],
+.stSidebarCollapsedControl,
+/* Streamlit 1.30+ uses different class names */
+button[kind="headerNoPadding"],
+[data-testid="stSidebarNavCollapseButton"],
+section[data-testid="stSidebarCollapsedControl"] button {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background-color: var(--accent-gold) !important;
+    color: var(--bg-main) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    margin: 8px !important;
+    position: fixed !important;
+    top: 60px !important;
+    left: 8px !important;
+    z-index: 999999 !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.5) !important;
+}
+
+/* Style the arrow/icon inside the button */
+button[data-testid="stSidebarCollapsedControl"] svg,
+button[data-testid="baseButton-headerNoPadding"] svg {
+    fill: var(--bg-main) !important;
+    color: var(--bg-main) !important;
 }
 
 /* Hide Streamlit header completely */
@@ -178,7 +217,8 @@ iframe {
 
 /* ===== Typography & Headers ===== */
 h1, h2, h3, h4, h5, h6 {
-    font-weight: 300 !important;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-weight: 700 !important;
     letter-spacing: 0.05em !important;
 }
 
@@ -197,9 +237,36 @@ h2 {
 
 h3 {
     color: var(--text-primary) !important;
+    font-size: 1.05em !important;
 }
 
-p, span, label, div {
+/* Report heading styles - unified 0.9rem with bold */
+[data-testid="stChatMessage"] h2,
+[data-testid="stChatMessage"] h3,
+[data-testid="stChatMessage"] h4,
+[data-testid="stChatMessage"] h5,
+[data-testid="stChatMessage"] h6 {
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Hide header anchor links */
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+    display: none !important;
+}
+
+p, label {
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    color: var(--text-primary) !important;
+    font-size: 0.9rem !important;
+}
+
+/* Separate rule for div without font-family to not break icon fonts */
+div {
     color: var(--text-primary) !important;
 }
 
@@ -286,6 +353,14 @@ p, span, label, div {
     color: var(--text-secondary) !important;
 }
 
+.report-title {
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.05em !important;
+    color: var(--accent-gold) !important;
+}
+
 /* ===== Chat Messages ===== */
 [data-testid="stChatMessage"] {
     background: var(--bg-card) !important;
@@ -296,7 +371,27 @@ p, span, label, div {
 }
 
 [data-testid="stChatMessage"] p {
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 0.9rem !important;
     color: var(--text-primary) !important;
+}
+
+[data-testid="stChatMessage"] ol,
+[data-testid="stChatMessage"] ul,
+[data-testid="stChatMessage"] li,
+[data-testid="stChatMessage"] li *,
+[data-testid="stChatMessage"] ol *,
+[data-testid="stChatMessage"] ul * {
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 0.9rem !important;
+    color: var(--text-primary) !important;
+}
+
+[data-testid="stChatMessage"] strong,
+[data-testid="stChatMessage"] em,
+[data-testid="stChatMessage"] span {
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 0.9rem !important;
 }
 
 /* ===== Input Fields ===== */
@@ -305,7 +400,8 @@ p, span, label, div {
     border: 1px solid var(--border-dim) !important;
     border-radius: 8px !important;
     padding: 0.75rem 1rem !important;
-    font-size: 1rem !important;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 0.9rem !important;
     color: var(--text-primary) !important;
     transition: all 0.3s ease !important;
 }
@@ -316,20 +412,34 @@ p, span, label, div {
 }
 
 /* Text Area (Topic Input) */
+.stTextArea {
+    border: none !important;
+    outline: none !important;
+}
+
+.stTextArea > div {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+}
+
 .stTextArea textarea {
     background: var(--bg-input) !important;
     border: 2px solid var(--border) !important;
     border-radius: 12px !important;
     padding: 1rem !important;
-    font-size: 1.1rem !important;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 0.9rem !important;
     color: var(--text-primary) !important;
     transition: all 0.3s ease !important;
     min-height: 100px !important;
 }
 
 .stTextArea textarea:focus {
-    border-color: var(--accent-gold) !important;
-    box-shadow: 0 0 0 4px var(--accent-gold-dim), 0 0 20px var(--accent-gold-dim) !important;
+    border: 3px solid var(--accent-gold) !important;
+    border-radius: 12px !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 .stTextArea textarea::placeholder {
@@ -337,7 +447,8 @@ p, span, label, div {
 }
 
 /* ===== Buttons ===== */
-.stButton > button {
+.stButton > button,
+[data-testid="stFormSubmitButton"] > button {
     background: linear-gradient(135deg, #D4AF37 0%, #B8960F 100%) !important;
     color: #050505 !important;
     border: none !important;
@@ -351,17 +462,21 @@ p, span, label, div {
     letter-spacing: 0.05em;
 }
 
-.stButton > button:hover {
+.stButton > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover {
     background: linear-gradient(135deg, #F5E6A3 0%, #D4AF37 100%) !important;
     box-shadow: 0 4px 20px rgba(212, 175, 55, 0.5) !important;
     transform: translateY(-2px) !important;
+    color: #050505 !important;
 }
 
-.stButton > button:active {
+.stButton > button:active,
+[data-testid="stFormSubmitButton"] > button:active {
     transform: translateY(0) !important;
 }
 
-.stButton > button:disabled {
+.stButton > button:disabled,
+[data-testid="stFormSubmitButton"] > button:disabled {
     background: var(--border) !important;
     color: var(--text-secondary) !important;
     box-shadow: none !important;
@@ -387,7 +502,7 @@ p, span, label, div {
     color: var(--accent-gold) !important;
     border-radius: 9999px !important;
     padding: 0.25rem 0.75rem !important;
-    font-size: 0.875rem !important;
+    font-size: 0.9rem !important;
     font-weight: 500 !important;
     border: 1px solid rgba(212, 175, 55, 0.3) !important;
 }
@@ -397,7 +512,7 @@ p, span, label, div {
     color: var(--error) !important;
     border-radius: 9999px !important;
     padding: 0.25rem 0.75rem !important;
-    font-size: 0.875rem !important;
+    font-size: 0.9rem !important;
     font-weight: 500 !important;
     border: 1px solid rgba(239, 68, 68, 0.3) !important;
 }
@@ -407,7 +522,7 @@ p, span, label, div {
     color: var(--accent-gold) !important;
     border-radius: 9999px !important;
     padding: 0.25rem 0.75rem !important;
-    font-size: 0.875rem !important;
+    font-size: 0.9rem !important;
     font-weight: 500 !important;
     border: 1px solid rgba(212, 175, 55, 0.3) !important;
 }
@@ -421,6 +536,7 @@ div[data-baseweb="select"] > div {
     background: var(--bg-input) !important;
     border-color: var(--border-dim) !important;
     border-radius: 8px !important;
+    font-size: 0.9rem !important;
 }
 
 div[data-baseweb="select"]:focus-within > div {
@@ -434,6 +550,7 @@ span[data-baseweb="tag"] {
     color: var(--accent-gold) !important;
     border-radius: 6px !important;
     border: none !important;
+    font-size: 0.9rem !important;
 }
 
 /* Dropdown menu */
@@ -441,17 +558,145 @@ ul[data-baseweb="menu"] {
     background: var(--bg-card) !important;
     border: 1px solid var(--border) !important;
     border-radius: 8px !important;
+    padding: 4px !important;
 }
 
 li[data-baseweb="menu-item"] {
     color: var(--text-primary) !important;
+    font-size: 0.9rem !important;
+    cursor: pointer !important;
+    border-radius: 4px !important;
 }
 
-li[data-baseweb="menu-item"]:hover {
-    background: var(--accent-gold-dim) !important;
+li[data-baseweb="menu-item"]:hover,
+li[data-baseweb="menu-item"]:focus {
+    background-color: var(--accent-gold-dim) !important;
 }
 
-/* ===== Slider ===== */
+/* File uploader text */
+[data-testid="stFileUploader"] {
+    font-size: 0.9rem !important;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+[data-testid="stFileUploader"] label,
+[data-testid="stFileUploader"] p,
+[data-testid="stFileUploader"] span,
+[data-testid="stFileUploader"] small,
+[data-testid="stFileUploader"] div,
+[data-testid="stFileUploader"] button {
+    font-size: 0.9rem !important;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    color: #e0e0e0 !important;
+}
+
+/* ===== Radio Buttons & Checkboxes ===== */
+/* Radio buttons and checkboxes use default Streamlit styling */
+
+/* Checkbox text color only */
+[data-testid="stCheckbox"] p {
+    color: var(--text-primary) !important;
+}
+
+/* Checkbox */
+[data-testid="stCheckbox"] label span[data-testid="stMarkdownContainer"] p {
+    color: var(--text-primary) !important;
+}
+
+[data-testid="stCheckbox"] input:checked + div {
+    background-color: var(--accent-gold) !important;
+    border-color: var(--accent-gold) !important;
+}
+
+[data-testid="stCheckbox"] input:checked + div svg {
+    fill: #000000 !important;
+}
+
+/* File uploader dropzone - KILL THE GREEN */
+[data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"] {
+    background-color: var(--bg-input) !important;
+    border: 1px dashed var(--border) !important;
+    border-radius: 8px !important;
+}
+
+[data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"]:hover {
+    border-color: var(--accent-gold) !important;
+    background-color: var(--accent-gold-dim) !important;
+}
+
+[data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"]:focus,
+[data-testid="stFileUploader"] section[data-testid="stFileUploaderDropzone"]:active {
+    border-color: var(--accent-gold) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px var(--accent-gold-dim) !important;
+}
+
+/* Browse Files Button Style Override */
+[data-testid="stFileUploader"] button[kind="secondary"] {
+    background-color: transparent !important;
+    color: var(--accent-gold) !important;
+    border: 1px solid var(--accent-gold) !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+[data-testid="stFileUploader"] button[kind="secondary"]:hover {
+    background-color: var(--accent-gold-dim) !important;
+    border-color: var(--accent-gold) !important;
+    color: var(--accent-gold) !important;
+}
+
+[data-testid="stFileUploader"] button[kind="secondary"]:active {
+    background-color: var(--accent-gold) !important;
+    color: #000000 !important;
+}
+
+/* Text Area (Topic Input) - KILL THE GREEN & WHITE CORNERS */
+.stTextArea {
+    border: none !important;
+    outline: none !important;
+    background-color: transparent !important;
+}
+
+.stTextArea > div {
+    border: none !important;
+    outline: none !important;
+    background-color: transparent !important;
+}
+
+/* Target the actual textarea element */
+.stTextArea textarea {
+    background: var(--bg-input) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 0.9rem !important;
+    color: var(--text-primary) !important;
+    transition: all 0.3s ease !important;
+    min-height: 100px !important;
+}
+
+.stTextArea textarea:focus {
+    border-color: var(--accent-gold) !important;
+    box-shadow: 0 0 0 1px var(--accent-gold) !important;
+    outline: none !important;
+    border-radius: 8px !important; /* Ensure match on focus */
+}
+
+/* Override Streamlit's default focus container styling */
+.stTextArea div[data-baseweb="textarea"], 
+.stTextArea div[data-baseweb="base-input"] {
+    border-color: transparent !important;
+    background-color: transparent !important;
+    border-radius: 8px !important;
+}
+
+.stTextArea div[data-baseweb="textarea"]:focus-within {
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
 .stSlider > div > div > div {
     background: var(--border) !important;
 }
@@ -466,16 +711,47 @@ li[data-baseweb="menu-item"]:hover {
 }
 
 /* ===== Expander ===== */
-.streamlit-expanderHeader {
+.streamlit-expanderHeader,
+.streamlit-expanderHeader span,
+.streamlit-expanderHeader p {
     background: var(--bg-input) !important;
     border-radius: 8px !important;
     border: 1px solid var(--border-dim) !important;
     color: var(--text-primary) !important;
-    font-weight: 600 !important;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 1.05em !important;
+    letter-spacing: 0.05em !important;
+}
+
+.streamlit-expanderHeader span,
+.streamlit-expanderHeader p {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Hide the arrow icon text (shows as "arrow_" when font fails to load) */
+.streamlit-expanderHeader svg {
+    display: block !important;
+}
+
+[data-testid="stExpander"] summary span[data-testid="stMarkdownContainer"] {
+    overflow: hidden !important;
 }
 
 .streamlit-expanderHeader:hover {
     border-color: var(--accent-gold) !important;
+}
+
+/* Hide empty expander header (when using separate h3) */
+.streamlit-expanderHeader:empty,
+.streamlit-expanderHeader:has(p:empty) {
+    display: none !important;
+}
+
+/* Also hide if the text content is empty */
+[data-testid="stExpander"] summary {
+    display: none !important;
 }
 
 details[open] > summary {
@@ -752,7 +1028,7 @@ def fetch_url_content(url: str) -> dict:
         # Truncate if too long
         max_length = URL_READING_CONFIG.get("max_content_length", 8000)
         if len(content) > max_length:
-            content = content[:max_length] + "\n\n[... 記事の続きは省略されました ...]"
+            content = content[:max_length] + "\n\n[... Article content truncated ...]"
         
         return {
             "success": True,
@@ -763,11 +1039,11 @@ def fetch_url_content(url: str) -> dict:
         }
         
     except requests.Timeout:
-        return {"success": False, "title": "", "content": "", "error": "タイムアウト：サーバーからの応答がありません"}
+        return {"success": False, "title": "", "content": "", "error": "Timeout: No response from server"}
     except requests.RequestException as e:
-        return {"success": False, "title": "", "content": "", "error": f"取得エラー: {str(e)}"}
+        return {"success": False, "title": "", "content": "", "error": f"Fetch error: {str(e)}"}
     except Exception as e:
-        return {"success": False, "title": "", "content": "", "error": f"解析エラー: {str(e)}"}
+        return {"success": False, "title": "", "content": "", "error": f"Parse error: {str(e)}"}
 
 
 # --- Dynamic Expertise Extraction ---
@@ -859,10 +1135,10 @@ def extract_pdf_text(file_bytes: bytes) -> dict:
                 "pages": len(pdf_reader.pages)
             }
         else:
-            return {"success": False, "content": "", "error": "PDF処理ライブラリがインストールされていません", "pages": 0}
+            return {"success": False, "content": "", "error": "PDF processing library not installed", "pages": 0}
             
     except Exception as e:
-        return {"success": False, "content": "", "error": f"PDF抽出エラー: {str(e)}", "pages": 0}
+        return {"success": False, "content": "", "error": f"PDF extraction error: {str(e)}", "pages": 0}
 
 
 def analyze_csv_excel(file_bytes: bytes, filename: str) -> dict:
@@ -879,34 +1155,34 @@ def analyze_csv_excel(file_bytes: bytes, filename: str) -> dict:
         elif file_ext in ["xlsx", "xls"]:
             df = pd.read_excel(io.BytesIO(file_bytes))
         else:
-            return {"success": False, "content": "", "error": "非対応のファイル形式"}
+            return {"success": False, "content": "", "error": "Unsupported file format"}
         
         # Generate summary
         summary = f"""
-# データファイル分析サマリー
+# Data File Analysis Summary
 
-## 基本情報
-- ファイル名: {filename}
-- 行数: {len(df)}
-- 列数: {len(df.columns)}
+## Basic Info
+- Filename: {filename}
+- Rows: {len(df)}
+- Columns: {len(df.columns)}
 
-## カラム一覧
+## Column List
 {', '.join(df.columns.tolist())}
 
-## データプレビュー（先頭5行）
+## Data Preview (First 5 rows)
 {df.head().to_string()}
 
-## 統計サマリー
+## Statistical Summary
 {df.describe().to_string()}
 
-## データ型
+## Data Types
 {df.dtypes.to_string()}
 """
         
         return {"success": True, "content": summary, "error": ""}
         
     except Exception as e:
-        return {"success": False, "content": "", "error": f"データ分析エラー: {str(e)}"}
+        return {"success": False, "content": "", "error": f"Data analysis error: {str(e)}"}
 
 
 def analyze_image_with_vision(image_bytes: bytes, clients: dict) -> dict:
@@ -976,10 +1252,10 @@ def analyze_image_with_vision(image_bytes: bytes, clients: dict) -> dict:
             return {"success": True, "content": response.content[0].text, "error": ""}
         
         else:
-            return {"success": False, "content": "", "error": "Vision APIが利用できません（OpenAI/Google/Anthropic APIキーが必要）"}
+            return {"success": False, "content": "", "error": "Vision API not available (OpenAI/Google/Anthropic API key required)"}
             
     except Exception as e:
-        return {"success": False, "content": "", "error": f"画像分析エラー: {str(e)}"}
+        return {"success": False, "content": "", "error": f"Image analysis error: {str(e)}"}
 
 
 def process_uploaded_file(uploaded_file, clients: dict) -> dict:
@@ -998,7 +1274,7 @@ def process_uploaded_file(uploaded_file, clients: dict) -> dict:
         return {
             "success": False,
             "content": "",
-            "error": f"ファイルサイズが大きすぎます（{file_size_mb:.1f}MB > {max_size}MB）",
+            "error": f"File size too large ({file_size_mb:.1f}MB > {max_size}MB)",
             "file_info": {}
         }
     
@@ -1008,7 +1284,7 @@ def process_uploaded_file(uploaded_file, clients: dict) -> dict:
         return {
             "success": False,
             "content": "",
-            "error": f"非対応のファイル形式: .{file_ext}",
+            "error": f"Unsupported file format: .{file_ext}",
             "file_info": {}
         }
     
@@ -1048,14 +1324,14 @@ def process_uploaded_file(uploaded_file, clients: dict) -> dict:
             return {
                 "success": False,
                 "content": "",
-                "error": f"テキスト読み込みエラー: {str(e)}",
+                "error": f"Text reading error: {str(e)}",
                 "file_info": file_info
             }
     
     return {
         "success": False,
         "content": "",
-        "error": "未対応のファイル形式",
+        "error": "Unsupported file format",
         "file_info": file_info
     }
 
@@ -1064,29 +1340,38 @@ def process_uploaded_file(uploaded_file, clients: dict) -> dict:
 def ask_ai(model_name: str, clients: dict, history_text: str, is_first: bool = False, 
            topic: str = "", temperature: float = 0.7, expertise: str = "General",
            personality: str = None, url_content: dict = None, 
-           file_content: dict = None,
+           file_content: list = None,  # Now accepts list of file results
            dynamic_expertise: str = None) -> str:
     provider, model_id = ALL_MODELS[model_name]
     system_prompt = get_system_prompt(expertise, personality, dynamic_expertise)
     
-    # File content integration (highest priority)
-    if file_content and file_content.get("success"):
-        file_info = file_content.get("file_info", {})
-        file_context = f"""
-**Context: Analyzing Uploaded File**
-You are analyzing content from an uploaded file.
+    # File content integration (highest priority) - now handles list
+    if file_content and len(file_content) > 0:
+        # Build combined file context
+        file_summaries = []
+        combined_content = []
+        
+        for f in file_content:
+            if f.get("success"):
+                file_info = f.get("file_info", {})
+                file_summaries.append(f"- {file_info.get('icon', '')} {file_info.get('name', 'unknown')} ({file_info.get('extension', '').upper()})")
+                combined_content.append(f"[{file_info.get('name', 'unknown')}]\n{f['content'][:4000]}")
+        
+        if combined_content:
+            file_context = f"""
+**Context: Analyzing Uploaded Files**
+You are analyzing content from {len(combined_content)} uploaded file(s).
 The user's question/instruction is: "{topic}"
 
-**File Information:**
-- Filename: {file_info.get('name', 'unknown')}
-- Type: {file_info.get('icon', '')} {file_info.get('extension', '').upper()}
+**Files:**
+{chr(10).join(file_summaries)}
 
-**File Content:**
-{file_content["content"][:6000]}
+**File Contents:**
+{chr(10).join(combined_content)[:8000]}
 
-Focus your discussion on the file content while addressing the user's question.
+Focus your discussion on the file contents while addressing the user's question.
 """
-        system_prompt = system_prompt + "\n" + file_context
+            system_prompt = system_prompt + "\n" + file_context
     
     # URL content integration (if no file)
     elif url_content and url_content.get("success"):
@@ -1142,11 +1427,11 @@ Focus your discussion on the file content while addressing the user's question.
 
 
 # --- Facilitator Function ---
-def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, collaborators: list, expertise: str = "General") -> str:
+def facilitate(facilitator_name: str, clients: dict, topic: str, full_log: str, collaborators: list, expertise: str = "General", synthesis_format: str = "default") -> str:
     provider, model_id = ALL_MODELS[facilitator_name]
 
     collab_list = "\n".join([f"- **{c}**" for c in collaborators])
-    facilitator_prompt = get_facilitator_prompt(expertise).format(topic=topic, collaborator_list=collab_list)
+    facilitator_prompt = get_facilitator_prompt_by_format(synthesis_format, expertise).format(topic=topic, collaborator_list=collab_list)
     
     # Compress log for long discussions to avoid token limits
     # Estimate: ~4 chars per token, keep under 8000 tokens for log
@@ -1226,11 +1511,14 @@ if "detected_url" not in st.session_state:
 # Dynamic expertise
 if "dynamic_expertise" not in st.session_state:
     st.session_state.dynamic_expertise = None
-# File upload
-if "uploaded_file_content" not in st.session_state:
-    st.session_state.uploaded_file_content = None
-if "last_uploaded_file" not in st.session_state:
-    st.session_state.last_uploaded_file = None
+# File upload (multiple files support)
+if "uploaded_files_list" not in st.session_state:
+    st.session_state.uploaded_files_list = []  # List of file results
+if "uploaded_file_names" not in st.session_state:
+    st.session_state.uploaded_file_names = set()  # Set of uploaded file names
+# Form key for reset
+if "form_key" not in st.session_state:
+    st.session_state.form_key = 0
 # Loop tracking for rerun protection
 if "loop_in_progress" not in st.session_state:
     st.session_state.loop_in_progress = False
@@ -1242,8 +1530,17 @@ if "loop_config" not in st.session_state:
     st.session_state.loop_config = None
 if "history_log" not in st.session_state:
     st.session_state.history_log = []
+# Re-discussion context
+if "rediscuss_context" not in st.session_state:
+    st.session_state.rediscuss_context = None
+# Auto-start rediscuss flag
+if "auto_start_rediscuss" not in st.session_state:
+    st.session_state.auto_start_rediscuss = None
+# Previous synthesis for display in expander
+if "previous_synthesis_for_display" not in st.session_state:
+    st.session_state.previous_synthesis_for_display = None
 
-
+# --- Authentication Gate ---
 # --- Main Layout ---
 # Display Logo
 logo_base64 = get_logo_base64()
@@ -1259,21 +1556,21 @@ else:
 # Three-column layout
 col_config, col_main, col_synthesis = st.columns([3, 4, 3], gap="medium")
 
-# --- LEFT COLUMN: Configuration ---
+# --- LEFT COLUMN: Configuration (all inside a collapsible expander) ---
 with col_config:
     st.markdown("### ✦ Configuration")
-    
-    # API Status
-    with st.expander("✦ API Keys", expanded=False):
+    with st.expander("", expanded=True):
+        # API Status
+        st.markdown('<p class="section-header">API Keys</p>', unsafe_allow_html=True)
         for provider, is_set in api_status.items():
             if is_set:
                 st.markdown(f'<div class="api-badge connected">✓ {provider.upper()}</div>', unsafe_allow_html=True)
             else:
                 st.markdown(f'<div class="api-badge disconnected">✗ {provider.upper()}</div>', unsafe_allow_html=True)
 
-    # Model Selection
-    with st.expander("✦ AI Collaborators", expanded=True):
-        st.markdown('<p class="section-header">OpenAI</p>', unsafe_allow_html=True)
+        # Model Selection - OpenAI
+        st.markdown('<p class="section-header">AI Collaborators</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size: 0.9rem; color: #888;">OpenAI</p>', unsafe_allow_html=True)
         selected_openai = st.multiselect(
             "OpenAI Models",
             list(OPENAI_MODELS.keys()),
@@ -1282,16 +1579,18 @@ with col_config:
             label_visibility="collapsed"
         )
 
-        st.markdown('<p class="section-header">Anthropic</p>', unsafe_allow_html=True)
+        # Model Selection - Anthropic
+        st.markdown('<p style="font-size: 0.9rem; color: #888;">Anthropic</p>', unsafe_allow_html=True)
         selected_anthropic = st.multiselect(
             "Anthropic Models",
             list(ANTHROPIC_MODELS.keys()),
-            default=["Claude Sonnet 4"] if api_status["anthropic"] else [],
+            default=["Claude Haiku 4.5"] if api_status["anthropic"] else [],
             disabled=not api_status["anthropic"],
             label_visibility="collapsed"
         )
 
-        st.markdown('<p class="section-header">Google</p>', unsafe_allow_html=True)
+        # Model Selection - Google
+        st.markdown('<p style="font-size: 0.9rem; color: #888;">Google</p>', unsafe_allow_html=True)
         selected_google = st.multiselect(
             "Google Models",
             list(GOOGLE_MODELS.keys()),
@@ -1300,36 +1599,54 @@ with col_config:
             label_visibility="collapsed"
         )
 
-    selected_models = selected_openai + selected_anthropic + selected_google
+        selected_models = selected_openai + selected_anthropic + selected_google
 
-    # Facilitator Selection
-    with st.expander("✦ Facilitator", expanded=True):
+        # Facilitator Selection
+        st.markdown('<p class="section-header">Facilitator</p>', unsafe_allow_html=True)
         available_facilitators = []
         for m, (provider, _) in ALL_MODELS.items():
             if m not in selected_models and api_status.get(provider, False):
                 available_facilitators.append(m)
 
         if available_facilitators:
-            facilitator = st.selectbox("Summary Host", available_facilitators, label_visibility="collapsed")
+            default_index = 0
+            if DEFAULT_FACILITATOR in available_facilitators:
+                default_index = available_facilitators.index(DEFAULT_FACILITATOR)
+            
+            facilitator = st.selectbox(
+                "Summary Host", 
+                available_facilitators, 
+                index=default_index,
+                label_visibility="collapsed"
+            )
         else:
             st.warning("⚠️ Please keep at least one model available")
             facilitator = None
 
-    # Settings
-    with st.expander("✦ Settings", expanded=True):
-        rounds = st.slider("Number of Rounds", 1, 5, 2, help="推奨: 2-3ラウンド。多すぎると議論が複雑になります")
-        creativity = st.slider("Creativity", 0.0, 1.0, 0.7, 0.1, help="Higher = more adventurous, Lower = more stable")
+        # Settings
+        st.markdown('<p class="section-header">Settings</p>', unsafe_allow_html=True)
+        rounds = st.slider("Number of Rounds", 1, 5, 2, help="Recommended: 2-3 rounds")
+        creativity = st.slider("Creativity", 0.0, 1.0, 0.7, 0.1)
         expertise_level = st.select_slider(
             "Expertise Level",
             options=["Beginner", "General", "Professional", "Expert"],
-            value="General",
-            help="Adjust discussion complexity and terminology"
+            value="General"
+        )
+        
+        # Synthesis Report Format
+        st.markdown('<p class="section-header">Report Format</p>', unsafe_allow_html=True)
+        synthesis_format = st.selectbox(
+            "Synthesis Report Format",
+            options=list(SYNTHESIS_FORMATS.keys()),
+            format_func=lambda x: SYNTHESIS_FORMATS[x],
+            index=0,
+            label_visibility="collapsed"
         )
         
         # Personality settings
-        st.markdown('<p class="section-header">AI個性設定</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-header">AI Personality</p>', unsafe_allow_html=True)
         personality_mode = st.radio(
-            "個性割り当てモード",
+            "Personality Mode",
             options=list(PERSONALITY_MODES.keys()),
             format_func=lambda x: PERSONALITY_MODES[x],
             horizontal=True,
@@ -1337,20 +1654,11 @@ with col_config:
         )
         st.session_state.personality_mode = personality_mode
         
-        # Show personality legend
-        with st.expander("✦ 個性の説明", expanded=False):
-            for pid, pinfo in AI_PERSONALITIES.items():
-                st.markdown(
-                    f'{pinfo["emoji"]} **{pinfo["name_ja"]}** ({pinfo["name_en"]}): {pinfo["description_ja"]}'
-                )
-        
         # Manual personality assignment
         if personality_mode == "manual" and selected_models:
-            st.markdown('<p class="section-header">モデル別個性</p>', unsafe_allow_html=True)
-            personality_options = [(pid, f'{pinfo["emoji"]} {pinfo["name_ja"]}') 
-                                   for pid, pinfo in AI_PERSONALITIES.items()]
-            
             for model in selected_models:
+                personality_options = [(pid, f'{pinfo["emoji"]} {pinfo["name_ja"]}') 
+                                       for pid, pinfo in AI_PERSONALITIES.items()]
                 selected_personality = st.selectbox(
                     f"{model}",
                     options=[p[0] for p in personality_options],
@@ -1363,47 +1671,72 @@ with col_config:
 with col_main:
     st.markdown("### ✦ Topic & Discussion")
     
-    # File uploader
-    uploaded_file = st.file_uploader(
-        "📎 ファイルをアップロード（オプション）",
-        type=list(FILE_UPLOAD_CONFIG["allowed_extensions"].keys()),
-        help="PDF、CSV、Excel、画像などをアップロードして内容を議論できます"
-    )
+    # File uploader with multi-file support
+    max_files = FILE_UPLOAD_CONFIG.get("max_files", 5)
+    max_total_mb = FILE_UPLOAD_CONFIG.get("max_total_size_mb", 30)
+    current_file_count = len(st.session_state.uploaded_files_list)
+    current_total_mb = sum(f["file_info"]["size_mb"] for f in st.session_state.uploaded_files_list)
     
-    # Process uploaded file
-    if uploaded_file is not None:
-        if st.session_state.uploaded_file_content is None or \
-           st.session_state.get("last_uploaded_file") != uploaded_file.name:
-            
-            with st.spinner(f"📄 {uploaded_file.name} を処理中..."):
-                clients = init_clients()
-                file_result = process_uploaded_file(uploaded_file, clients)
+    # Show current files
+    if st.session_state.uploaded_files_list:
+        st.markdown(f"**📎 アップロード済み ({current_file_count}/{max_files}ファイル, {current_total_mb:.1f}/{max_total_mb}MB)**")
+        
+        for idx, file_result in enumerate(st.session_state.uploaded_files_list):
+            file_info = file_result["file_info"]
+            col_file, col_delete = st.columns([5, 1])
+            with col_file:
+                st.markdown(f"{file_info['icon']} **{file_info['name']}** ({file_info['size_mb']:.1f}MB)")
+            with col_delete:
+                if st.button("🗑️", key=f"delete_file_{idx}", help="削除"):
+                    st.session_state.uploaded_files_list.pop(idx)
+                    st.session_state.uploaded_file_names.discard(file_info['name'])
+                    st.rerun()
+    
+    # File uploader (disabled if limit reached)
+    can_upload = current_file_count < max_files
+    
+    if can_upload:
+        uploaded_file = st.file_uploader(
+            f"📎 ファイル追加 (残り{max_files - current_file_count})",
+            type=list(FILE_UPLOAD_CONFIG["allowed_extensions"].keys()),
+            help=f"PDF, CSV, Excel, 画像をアップロード (上限: {max_files}ファイル, 合計{max_total_mb}MB)",
+            key=f"file_uploader_{st.session_state.form_key}_{current_file_count}"
+        )
+        
+        # Process uploaded file
+        if uploaded_file is not None:
+            # Check if already uploaded
+            if uploaded_file.name not in st.session_state.uploaded_file_names:
+                # Check total size limit
+                file_size_mb = len(uploaded_file.read()) / (1024 * 1024)
+                uploaded_file.seek(0)
                 
-                if file_result["success"]:
-                    st.session_state.uploaded_file_content = file_result
-                    st.session_state.last_uploaded_file = uploaded_file.name
-                    
-                    file_info = file_result["file_info"]
-                    st.success(f"✅ ファイルを読み込みました: {file_info['icon']} {file_info['name']} ({file_info['size_mb']:.1f}MB)")
-                    
-                    # Preview
-                    with st.expander("📄 ファイル内容（プレビュー）", expanded=False):
-                        if file_info["extension"] in ["png", "jpg", "jpeg"]:
-                            uploaded_file.seek(0)
-                            st.image(uploaded_file, caption=file_info["name"])
-                            st.markdown("**AI分析結果:**")
-                        st.text(file_result["content"][:1500] + "...")
+                if current_total_mb + file_size_mb > max_total_mb:
+                    st.error(f"❌ 合計サイズ上限超過 ({current_total_mb + file_size_mb:.1f}MB > {max_total_mb}MB)")
                 else:
-                    st.error(f"❌ {file_result['error']}")
-                    st.session_state.uploaded_file_content = None
+                    with st.spinner(f"📄 Processing {uploaded_file.name}..."):
+                        clients = init_clients()
+                        file_result = process_uploaded_file(uploaded_file, clients)
+                        
+                        if file_result["success"]:
+                            st.session_state.uploaded_files_list.append(file_result)
+                            st.session_state.uploaded_file_names.add(uploaded_file.name)
+                            st.success(f"✅ 追加: {file_result['file_info']['icon']} {file_result['file_info']['name']}")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ {file_result['error']}")
+    else:
+        st.info(f"📎 ファイル上限に達しました ({max_files}ファイル)")
+
     
-    with st.form(key="session_form"):
+    
+    with st.form(key=f"session_form_{st.session_state.form_key}"):
         topic = st.text_area(
             "Topic",
             "",
             height=100,
             label_visibility="collapsed",
-            placeholder="トピックを入力してください...\n💡 URLを貼り付けると記事内容を自動取得して議論します"
+            placeholder="Enter your topic...\n💡 Paste a URL to automatically fetch and discuss article content"
         )
         start_button = st.form_submit_button("✦ Start Session", type="primary", use_container_width=True)
 
@@ -1433,6 +1766,8 @@ with chat_container:
     if st.session_state.discussion_history:
         st.markdown("---")
         st.markdown(f"**Topic:** {st.session_state.current_topic}")
+        
+        # Show previous synthesis in expander if available
         st.markdown(f"**Participants:** {', '.join(st.session_state.current_participants)}")
         st.markdown(f"**Facilitator:** {st.session_state.facilitator_name}")
         st.markdown("---")
@@ -1479,6 +1814,7 @@ def assign_personalities(models: list, mode: str) -> dict:
 
 # Start new session or continue interrupted one
 should_run_loop = False
+
 if start_button and can_start:
     # New session - clear and initialize
     st.session_state.discussion_history = []
@@ -1496,8 +1832,10 @@ if start_button and can_start:
         "selected_models": selected_models,
         "facilitator": facilitator,
         "creativity": creativity,
-        "expertise_level": expertise_level
+        "expertise_level": expertise_level,
+        "synthesis_format": synthesis_format
     }
+    
     
     # Assign personalities
     st.session_state.personality_assignments = assign_personalities(
@@ -1511,22 +1849,22 @@ if start_button and can_start:
     url_content_data = None
     
     if detected_url:
-        with st.spinner(f"🌐 記事を読み込み中... {detected_url[:50]}..."):
+        with st.spinner(f"🌐 Loading article... {detected_url[:50]}..."):
             url_content_data = fetch_url_content(detected_url)
             
             if url_content_data["success"]:
-                st.success(f"✅ 記事を取得しました: {url_content_data['title'][:50]}...")
+                st.success(f"✅ Article fetched: {url_content_data['title'][:50]}...")
                 st.session_state.url_content = url_content_data
                 st.session_state.detected_url = detected_url
                 
                 # Show article preview
-                with st.expander("📄 取得した記事内容（プレビュー）", expanded=False):
-                    st.markdown(f"**タイトル:** {url_content_data['title']}")
+                with st.expander("📄 Article Content (Preview)", expanded=False):
+                    st.markdown(f"**Title:** {url_content_data['title']}")
                     st.markdown(f"**URL:** {detected_url}")
                     st.text(url_content_data['content'][:1000] + "...")
             else:
-                st.warning(f"⚠️ 記事の取得に失敗: {url_content_data['error']}")
-                st.info("💡 URLなしのテキストとして議論を続けます")
+                st.warning(f"⚠️ Failed to fetch article: {url_content_data['error']}")
+                st.info("💡 Continuing discussion as text without URL")
     
     clients = init_clients()
     
@@ -1535,9 +1873,13 @@ if start_button and can_start:
     content_to_analyze = ""
     content_source = "topic"
     
-    if st.session_state.uploaded_file_content and st.session_state.uploaded_file_content.get("success"):
-        # File has highest priority
-        content_to_analyze = st.session_state.uploaded_file_content["content"]
+    if st.session_state.uploaded_files_list:
+        # Combine all file contents
+        combined_content = "\n\n---\n\n".join([
+            f"[{f['file_info']['name']}]\n{f['content'][:3000]}"
+            for f in st.session_state.uploaded_files_list
+        ])
+        content_to_analyze = combined_content
         content_source = "file"
     elif url_content_data and url_content_data.get("success"):
         # URL has second priority
@@ -1548,12 +1890,12 @@ if start_button and can_start:
         content_to_analyze = topic
         content_source = "topic"
     
-    with st.spinner("🎓 議論に必要な専門性を分析中..."):
+    with st.spinner("🎓 Analyzing required expertise..."):
         dynamic_expertise = extract_dynamic_expertise(content_to_analyze, clients)
         st.session_state.dynamic_expertise = dynamic_expertise
         
         if dynamic_expertise:
-            with st.expander("🎓 自動検出された専門性", expanded=False):
+            with st.expander("🎓 Auto-detected Expertise", expanded=False):
                 st.markdown(dynamic_expertise)
     
     history_log = []
@@ -1561,12 +1903,12 @@ if start_button and can_start:
 
     with chat_container:
         st.markdown("---")
-        st.markdown(f"**Topic:** {topic}")
+        st.markdown(f"**Topic:** {st.session_state.current_topic}")
         
         # Show content source
-        if st.session_state.uploaded_file_content:
-            file_info = st.session_state.uploaded_file_content["file_info"]
-            st.markdown(f"**📎 File:** {file_info['icon']} {file_info['name']}")
+        if st.session_state.uploaded_files_list:
+            file_names = ", ".join([f["file_info"]["icon"] + " " + f["file_info"]["name"] for f in st.session_state.uploaded_files_list])
+            st.markdown(f"**📎 Files:** {file_names}")
         elif detected_url and url_content_data and url_content_data.get("success"):
             st.markdown(f"**📰 Article:** {url_content_data['title'][:60]}...")
         
@@ -1620,7 +1962,7 @@ if start_button and can_start:
                                     msg = ask_ai(model, clients, "", is_first=True, topic=topic, 
                                                  temperature=creativity, expertise=expertise_level,
                                                  personality=personality, url_content=url_content_data,
-                                                 file_content=st.session_state.uploaded_file_content,
+                                                 file_content=st.session_state.uploaded_files_list,
                                                  dynamic_expertise=st.session_state.dynamic_expertise)
                                 else:
                                     # Dynamic context window: fewer messages for longer discussions
@@ -1629,7 +1971,7 @@ if start_button and can_start:
                                     msg = ask_ai(model, clients, context_text, 
                                                  temperature=creativity, expertise=expertise_level,
                                                  personality=personality, url_content=url_content_data,
-                                                 file_content=st.session_state.uploaded_file_content,
+                                                 file_content=st.session_state.uploaded_files_list,
                                                  dynamic_expertise=st.session_state.dynamic_expertise)
                                 
                                 # Check if the response is an error message
@@ -1698,7 +2040,7 @@ if start_button and can_start:
     try:
         import time
         start_time = time.time()
-        conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, expertise=expertise_level)
+        conclusion = facilitate(facilitator, clients, topic, full_log, selected_models, expertise=expertise_level, synthesis_format=synthesis_format)
         elapsed = time.time() - start_time
         
         # Check if conclusion is actually an error message
@@ -1749,50 +2091,145 @@ with synthesis_container:
             st.markdown(f'<span class="model-badge">{st.session_state.facilitator_name}</span>', unsafe_allow_html=True)
             st.markdown(st.session_state.conclusion)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.download_button(
-                "✦ Download Report",
-                st.session_state.full_report,
-                "xthink_idea_report.txt",
-                use_container_width=True
-            )
+        # --- Download Options (Multiple Formats) ---
+        st.markdown('<p class="section-header">Download Report</p>', unsafe_allow_html=True)
         
-        # NotebookLM Export Button
+        # Prepare data for different formats
+        topic = st.session_state.current_topic or "Untitled"
+        discussion = st.session_state.discussion_history or []
+        summary = st.session_state.conclusion or ""
+        facilitator = st.session_state.facilitator_name or "Unknown"
+        
+        # Generate filenames
+        import re
+        safe_topic = re.sub(r'[^\w\s-]', '', topic[:30]).strip().replace(' ', '_') or 'report'
+        
+        # TXT format (original)
+        txt_content = st.session_state.full_report
+        
+        # Markdown format
+        md_content = f"""# X-Think Idea Synthesis Report
+
+## Topic
+{topic}
+
+## Discussion Summary
+**Facilitator:** {facilitator}
+
+{summary}
+
+## Discussion History
+"""
+        for i, msg in enumerate(discussion, 1):
+            md_content += f"\n### Round {i}: {msg.get('model', 'Unknown')}\n"
+            if msg.get('personality'):
+                md_content += f"*Personality: {msg['personality']}*\n\n"
+            md_content += f"{msg.get('content', '')}\n"
+        
+        # JSON format
+        import json
+        json_data = {
+            "topic": topic,
+            "facilitator": facilitator,
+            "summary": summary,
+            "discussion_history": [
+                {
+                    "round": i,
+                    "model": msg.get("model", "Unknown"),
+                    "personality": msg.get("personality", ""),
+                    "content": msg.get("content", "")
+                }
+                for i, msg in enumerate(discussion, 1)
+            ],
+            "metadata": {
+                "generated_by": "X-Think",
+                "timestamp": __import__('datetime').datetime.now().isoformat()
+            }
+        }
+        json_content = json.dumps(json_data, ensure_ascii=False, indent=2)
+        
+        # HTML format
+        html_content = f"""<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Think Report: {topic[:50]}</title>
+    <style>
+        body {{ font-family: 'Inter', sans-serif; max-width: 800px; margin: 0 auto; padding: 2rem; background: #1a1a1a; color: #f0f0f0; }}
+        h1 {{ color: #D4AF37; border-bottom: 2px solid #D4AF37; padding-bottom: 0.5rem; }}
+        h2 {{ color: #D4AF37; }}
+        .summary {{ background: #2a2a2a; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #D4AF37; }}
+        .message {{ background: #252525; padding: 1rem; border-radius: 8px; margin: 1rem 0; }}
+        .model {{ color: #D4AF37; font-weight: bold; }}
+        .personality {{ color: #888; font-size: 0.9rem; }}
+    </style>
+</head>
+<body>
+    <h1>✦ X-Think Idea Synthesis Report</h1>
+    <h2>Topic</h2>
+    <p>{topic}</p>
+    <h2>Summary</h2>
+    <div class="summary">
+        <p><strong>Facilitator:</strong> {facilitator}</p>
+        <div>{summary.replace(chr(10), '<br>')}</div>
+    </div>
+    <h2>Discussion History</h2>
+"""
+        for i, msg in enumerate(discussion, 1):
+            html_content += f"""    <div class="message">
+        <p class="model">Round {i}: {msg.get('model', 'Unknown')}</p>
+        {"<p class='personality'>Personality: " + msg.get('personality', '') + "</p>" if msg.get('personality') else ""}
+        <p>{msg.get('content', '').replace(chr(10), '<br>')}</p>
+    </div>
+"""
+        html_content += """</body>
+</html>"""
+        
+        # CSV format
+        import csv
+        import io
+        csv_buffer = io.StringIO()
+        writer = csv.writer(csv_buffer)
+        writer.writerow(["Round", "Model", "Personality", "Content"])
+        for i, msg in enumerate(discussion, 1):
+            writer.writerow([i, msg.get("model", ""), msg.get("personality", ""), msg.get("content", "")])
+        writer.writerow([])
+        writer.writerow(["Summary", facilitator, "", summary])
+        csv_content = csv_buffer.getvalue()
+        
+        # Download buttons in columns (5 formats)
+        col1, col2, col3, col4, col5 = st.columns(5)
+        with col1:
+            st.download_button("TXT", txt_content, f"{safe_topic}.txt", use_container_width=True)
         with col2:
-            if NOTEBOOKLM_ENABLED and NOTEBOOKLM_AVAILABLE:
-                if st.button("📓 NotebookLMに送信", use_container_width=True):
-                    with st.spinner("NotebookLMにエクスポート中..."):
-                        # Prepare discussion history
-                        discussion_data = []
-                        for msg in st.session_state.discussion_history:
-                            discussion_data.append({
-                                "model": msg.get("model", "Unknown"),
-                                "personality": msg.get("personality", ""),
-                                "content": msg.get("content", "")
-                            })
-                        
-                        result = export_discussion_to_notebooklm(
-                            topic=st.session_state.current_topic,
-                            discussion_history=discussion_data,
-                            summary=st.session_state.conclusion,
-                            project_number=GCP_PROJECT_NUMBER,
-                            region=NOTEBOOKLM_REGION
-                        )
-                        
-                        if result["success"]:
-                            st.success("✅ NotebookLMにエクスポートしました！")
-                            st.markdown(f"[📓 NotebookLMで開く]({result['url']})")
-                        else:
-                            st.error(f"エクスポートに失敗: {result['error']}")
-            elif NOTEBOOKLM_ENABLED and not NOTEBOOKLM_AVAILABLE:
-                st.button("📓 NotebookLM (未設定)", disabled=True, use_container_width=True)
+            st.download_button("MD", md_content, f"{safe_topic}.md", use_container_width=True)
+        with col3:
+            st.download_button("JSON", json_content, f"{safe_topic}.json", mime="application/json", use_container_width=True)
+        with col4:
+            st.download_button("HTML", html_content, f"{safe_topic}.html", mime="text/html", use_container_width=True)
+        with col5:
+            st.download_button("CSV", csv_content, f"{safe_topic}.csv", mime="text/csv", use_container_width=True)
 
         if st.button("✦ Reset", use_container_width=True):
+            # Full reset - clear everything
             st.session_state.conclusion = None
             st.session_state.facilitator_name = None
             st.session_state.full_report = None
+            st.session_state.rediscuss_context = None
+            st.session_state.discussion_history = []
+            st.session_state.current_topic = None
+            st.session_state.generating = False
+            st.session_state.url_content = None
+            st.session_state.detected_url = None
+            st.session_state.uploaded_files_list = []
+            st.session_state.uploaded_file_names = set()
+            st.session_state.dynamic_expertise = None
+            # Increment form key to reset text area
+            st.session_state.form_key += 1
             st.rerun()
+
+
     elif st.session_state.generating:
         st.markdown("""
         <div class="canvas-card">

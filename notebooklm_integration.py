@@ -42,21 +42,67 @@ class NotebookLMClient:
         self._token = None
     
     def _get_access_token(self) -> str:
-        """Get access token for API authentication."""
+        """Get access token for API authentication using Keyless DWD."""
         if not GOOGLE_AUTH_AVAILABLE:
-            raise RuntimeError(
-                "google-auth library not installed. "
-                "Run: pip install google-auth google-auth-oauthlib"
-            )
+            raise RuntimeError("google-auth library not installed.")
         
+        delegated_email = os.getenv("DELEGATED_USER_EMAIL")
+        scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+
         if self._credentials is None:
-            self._credentials, _ = google.auth.default(
-                scopes=["https://www.googleapis.com/auth/cloud-platform"]
-            )
+            if delegated_email:
+                try:
+                    # Keyless Domain-Wide Delegation
+                    print(f"Attempting Keyless DWD for {delegated_email}...")
+                    from google.auth import iam, default
+                    from google.oauth2 import service_account
+                    # 1. Get default credentials (triggers metadata server on Cloud Run)
+                    source_creds, project_id = default()
+                    
+                    # 2. Get the service account email
+                    # On Cloud Run, source_creds.service_account_email might be 'default', which signBlob API rejects.
+                    # We must use the fully qualified email.
+                    service_account_email = os.getenv("GCP_SERVICE_ACCOUNT_EMAIL")
+                    
+                    if not service_account_email or service_account_email == "default":
+                         # Fallback: Check source creds but ignore 'default'
+                         if hasattr(source_creds, "service_account_email") and source_creds.service_account_email != "default":
+                             service_account_email = source_creds.service_account_email
+                         else:
+                             # Hardcoded fallback for this specific environment
+                             service_account_email = "1089461983457-compute@developer.gserviceaccount.com"
+                    
+                    print(f"DEBUG: Using Service Account Email for DWD: {service_account_email}")
+
+                    # 3. Create a Signer using the IAM Credentials API
+                    # This uses the attached service account to sign bytes remotely
+                    request = google.auth.transport.requests.Request()
+                    source_creds.refresh(request)
+                    signer = iam.Signer(request, source_creds, service_account_email)
+
+                    # 4. Create Service Account Credentials using the remote signer
+                    # This creates a JWT signed by the service account, impersonating the subject
+                    self._credentials = service_account.Credentials(
+                        signer,
+                        service_account_email,
+                        "https://oauth2.googleapis.com/token",
+                        scopes=scopes,
+                        subject=delegated_email
+                    )
+                    print("Keyless DWD Credentials created successfully.")
+
+                except Exception as e:
+                    print(f"Keyless DWD Auth failed: {e}")
+                    # Fallback to standard ADC (will likely fail for NotebookLM if DWD is required)
+                    self._credentials, _ = google.auth.default(scopes=scopes)
+            else:
+                # Standard ADC
+                self._credentials, _ = google.auth.default(scopes=scopes)
         
         # Refresh if needed
         request = google.auth.transport.requests.Request()
-        self._credentials.refresh(request)
+        if not self._credentials.valid:
+            self._credentials.refresh(request)
         
         return self._credentials.token
     
@@ -127,17 +173,23 @@ class NotebookLMClient:
         if "/" in notebook_id:
             notebook_id = notebook_id.split("/")[-1]
         
+        # Note: 'sources' endpoint returns 404. Use 'sources:batchCreate'.
+        # Note: 'user_contents' is the required container field.
+        # Attempt: Pattern A - Vertex AI standard 'parts' structure
         data = {
-            "source": {
-                "displayName": title,
-                "inlineSource": {
-                    "content": content,
-                    "mimeType": "text/plain"
+            "user_contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": f"# {title}\n\n{content}"
+                        }
+                    ]
                 }
-            }
+            ]
         }
         
-        return self._make_request("POST", f"/notebooks/{notebook_id}/sources", data)
+        return self._make_request("POST", f"/notebooks/{notebook_id}/sources:batchCreate", data)
     
     def list_notebooks(self, page_size: int = 20) -> Dict[str, Any]:
         """List recently accessed notebooks."""

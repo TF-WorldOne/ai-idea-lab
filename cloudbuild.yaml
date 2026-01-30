@@ -30,5 +30,9 @@ steps:
       - '--max-instances'
       - '10'
 
+# Build machine options - increase disk size to prevent out-of-space errors
+options:
+  diskSizeGb: 200
+
 images:
   - 'gcr.io/$PROJECT_ID/ai-idea-lab:$COMMIT_SHA'
